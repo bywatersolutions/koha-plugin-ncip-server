@@ -6,4 +6,4 @@ minimum_version: 19.11.06
 maximum_version:
 version: {VERSION}
 description: This plugin enables sending of phone message to patrons via Twilio.
-module: Koha::Plugin::Com::ByWaterSolutions::TwilioVoice
+module: Koha::Plugin::Com::ByWaterSolutions::NcipServer

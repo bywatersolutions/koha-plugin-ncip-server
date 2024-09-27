@@ -1,4 +1,4 @@
-package Koha::Plugin::Com::ByWaterSolutions::TwilioVoice;
+package Koha::Plugin::Com::ByWaterSolutions::NcipServer;
 
 use Modern::Perl;
 
@@ -251,7 +251,7 @@ sub api_routes {
 sub api_namespace {
     my ($self) = @_;
 
-    return 'twiliovoice';
+    return 'ncip_server';
 }
 
 1;
