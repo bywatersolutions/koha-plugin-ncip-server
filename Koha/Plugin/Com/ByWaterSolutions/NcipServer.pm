@@ -19,6 +19,8 @@ use Modern::Perl;
 
 use base qw(Koha::Plugins::Base);
 
+use Encode;
+use Mojo::JSON qw(decode_json);
 use Try::Tiny;
 use YAML::XS;
 
@@ -154,6 +156,56 @@ sub check_configuration {
         unless C4::Context->preference('ILLModule');
 
     return \@errors;
+}
+
+=head3 configuration
+
+Accessor for the de-serialized plugin configuration
+
+=cut
+
+sub configuration {
+    my ( $self, $params ) = @_;
+
+    unless ( !$self->{_configuration} || $params->{force} ) {
+
+        eval {
+            $self->{_configuration} = YAML::XS::Load( Encode::encode_utf8( $self->retrieve_data('configuration') ) );
+        };
+
+        warn "[NCIP CONFIG ERROR]" . $@
+            if $@;
+    }
+
+    return $self->{_configuration};
+}
+
+=head3 requires_token
+
+    if ( $plugin->requires_token() ) { ... }
+
+=cut
+
+sub requires_token {
+    my ($self) = @_;
+
+    return $self->configuration->{token_required} ? 1 : 0;
+}
+
+=head3 is_token_valid
+
+    if ( $plugin->is_token_valid($token) ) { ... }
+
+Compares the passed token with the configured one.
+
+=cut
+
+sub is_token_valid {
+    my ($self, $token) = @_;
+
+    my $configured_token = $self->configuration->{auth_token} // '';
+
+    return $configured_token eq $token;
 }
 
 1;

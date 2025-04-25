@@ -22,7 +22,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use Try::Tiny;
 use XML::Tidy;
 
-use Koha::Notice::Messages;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer;
 
 =head1 API
 
@@ -40,8 +40,15 @@ sub ncip {
 
     return try {
 
-        my $token = $c->validation->param('authorization_token');
+        my $plugin = Koha::Plugin::Com::ByWaterSolutions::NcipServer->new();
+        my $token = $c->param('authorization_token');
+
         warn "TOKEN: $token";
+        return $c->render(
+            status => 403,
+            json   => { error => 'Invalid token passed' }
+        ) if $plugin->requires_token() && !$plugin->token_valid($token);
+
         #TODO: do actual token validation
         my $require_token = C4::Context->preference('NcipRequireToken');
         $log->debug("RETURNING. TOKEN REQUIRED BUT NOT PROVIDED") && return "It works!" if $require_token && !$token;

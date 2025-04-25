@@ -22,3 +22,11 @@ management page.
 ### Manual install
 
 Download this plugin from the [Releases page](https://github.com/bywatersolutions/koha-plugin-ncip-server/releases) page.
+
+## Configuration
+
+```yaml
+---
+auth_token: XXX
+token_required: true
+```
