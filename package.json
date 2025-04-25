@@ -1,0 +1,31 @@
+{
+    "name": "koha-plugin-ncip-server",
+    "version": "0.0.0",
+    "description": "NCIP server plugin",
+    "devDependencies": {
+        "gulp": "^4.0.2",
+        "gulp-cli": "^2.3.0",
+        "gulp-run": "^1.7.1"
+    },
+    "scripts": {
+        "preversion": "sed -i -e \"s/^our \\$VERSION = .*/our \\$VERSION = \\\"$npm_new_version\\\";/\" Koha/Plugin/Com/ByWaterSolutions/NcipServer.pm; git add -u; rm Koha/Plugin/Com/ByWaterSolutions/NcipServer.pm-e",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "kpz": "echo -n ${npm_package_name}-v${npm_package_version}.kpz",
+        "name": "echo -n ${npm_package_name}"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/bywatersolutions/koha-plugin-ncip-server.git"
+    },
+    "author": "Kyle Hall <kyle@bywatersolutions.com>",
+    "license": "GPL-3.0",
+    "bugs": {
+        "url": "https://github.com/bywatersolutions/koha-plugin-ncip-server/issues"
+    },
+    "homepage": "https://github.com/bywatersolutions/koha-plugin-ncip-server",
+    "dependencies": {
+        "datetime": "0.0.3",
+        "jsonfile": "^5.0.0",
+        "node-datetime": "^2.0.0"
+    }
+}
