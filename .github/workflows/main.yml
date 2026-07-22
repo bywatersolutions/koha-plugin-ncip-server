@@ -47,7 +47,7 @@ jobs:
 
     - name: Install plugin dependencies
       run: |
-        docker exec kohadev-koha-1 bash -c 'cpanm WWW::Twilio::TwiML WWW::Form::UrlEncoded'
+        docker exec kohadev-koha-1 bash -c 'cpanm XML::Tidy'
 
     - name: Run tests
       run: |
