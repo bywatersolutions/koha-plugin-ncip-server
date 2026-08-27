@@ -19,76 +19,87 @@ use Modern::Perl;
 
 use Mojo::Base 'Mojolicious::Controller';
 
+use Template;
 use Try::Tiny;
-use XML::Tidy;
+use XML::LibXML;
+
+use Koha::Logger;
 
 use Koha::Plugin::Com::ByWaterSolutions::NcipServer;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP;
 
 =head1 API
 
 =head2 Class Methods
 
-=head3 Returns TwiML for the given message
+=head3 ncip
+
+Processes an incoming NCIP XML message and returns the NCIP XML response
 
 =cut
 
 sub ncip {
-    warn "Koha::Plugin::Com::ByWaterSolutions::NcipServer::API::ncip";
     my $c = shift->openapi->valid_input or return;
 
-    my $log = Koha::Logger->get();
+    my $logger = Koha::Logger->get( { category => 'plugin.ncipserver' } );
 
     return try {
-
         my $plugin = Koha::Plugin::Com::ByWaterSolutions::NcipServer->new();
-        my $token = $c->param('authorization_token');
 
-        warn "TOKEN: $token";
+        my $config = $plugin->configuration;
         return $c->render(
-            status => 403,
-            json   => { error => 'Invalid token passed' }
-        ) if $plugin->requires_token() && !$plugin->token_valid($token);
+            status => 500,
+            json   => { error => 'NCIP server plugin configuration is invalid' }
+        ) unless defined $config;
 
-        #TODO: do actual token validation
-        my $require_token = C4::Context->preference('NcipRequireToken');
-        $log->debug("RETURNING. TOKEN REQUIRED BUT NOT PROVIDED") && return "It works!" if $require_token && !$token;
-        $log->debug("RETURNING. TOKEN $token DOES NOT MATCH" . C4::Context->preference('NcipToken') ) && return "It works!" if $token && $token ne C4::Context->preference('NcipToken');
+        if ( $plugin->requires_token ) {
+            my $token = $c->param('authorization_token');
 
+            return $c->render(
+                status => 403,
+                json   => { error => 'Invalid or missing authorization token' }
+            ) unless defined $token && $plugin->is_token_valid($token);
+        }
 
-        my $xml;
-        $xml //= $c->param('xml');
-        $xml //= $c->param('XForms:Model');
-        $xml //= $c->req->body;
-
-        $log->debug("RAW XML: **$xml**");
+        # Same precedence as the standalone server: form or query param
+        # 'xml', then 'XForms:Model', then the raw request body
+        my $xml = $c->param('xml') // $c->param('XForms:Model') // $c->req->body // q{};
 
         # Gets rid of DOCTYPE stanzas, our parser chokes on them
         $xml =~ s/<!DOCTYPE[^>[]*(\[[^]]*\])?>//g;
 
-        # Tidy's and validates XML.
-        try {
-            $xml = XML::Tidy->new(xml => $xml)->tidy()->toString() if $xml;
-        }
-        catch {
-            $log->debug("ERROR FORMATTING XML: $_");
-        };
-        $log->debug("FORMATTED: $xml");
+        my $ncip = Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP->new();
 
         my $content;
         try {
-            $content = $ncip->process_request($xml, config);
+            $content = $ncip->process_request( $xml, $config );
         }
         catch {
-            $log->debug("ERROR PROCESSING REQUEST: $_");
+            $logger->warn("NCIP: error processing request: $_");
         };
-        $content ||= "It works!";    # No NCIP message was passed in
+        $content ||= "It works!";    # No (valid) NCIP message was passed in
 
-        my $xml_response = template 'main', {content => $content, ncip_version => $ncip->{ncip_protocol_version}};
-        $xml_response = xml_tidy($xml_response);
+        my $template = Template->new( { INCLUDE_PATH => $ncip->templates_dir, ENCODING => 'UTF-8' } );
+        my $response = q{};
+        $template->process(
+            'main.tt',
+            {
+                content      => $content,
+                ncip_version => $ncip->{ncip_protocol_version} // 2,
+            },
+            \$response
+        ) or die $template->error();
 
-        $log->debug("XML RESPONSE: \n$xml_response");
+        # Pretty-print and check well-formedness, replaces the standalone
+        # server's XML::Tidy pass
+        try {
+            $response = XML::LibXML->load_xml( string => $response )->toString(1);
+        }
+        catch {
+            $logger->warn("NCIP: response is not well-formed XML: $_");
+        };
 
-        return $c->render(status => 200, format => "xml", text => "<test>TEST</test>");
+        return $c->render( status => 200, format => 'xml', text => $response );
     }
     catch {
         $c->unhandled_exception($_);
