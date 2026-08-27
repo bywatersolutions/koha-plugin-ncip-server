@@ -65,6 +65,16 @@ sub ncip {
         # 'xml', then 'XForms:Model', then the raw request body
         my $xml = $c->param('xml') // $c->param('XForms:Model') // $c->req->body // q{};
 
+        # Koha 26.05 and later ( Bug 37762 ) converts request bodies sent with
+        # an 'application/xml' content type to JSON before the controller runs,
+        # which destroys the NCIP message. Warn so the problem is findable, the
+        # fix is to have the client ( or Apache ) send 'text/xml' instead.
+        my $content_type = $c->req->headers->content_type // q{};
+        if ( $xml =~ /^\s*\{/ && $content_type =~ m{application/xml} ) {
+            $logger->warn( "NCIP: the request body was converted to JSON by Koha's REST API ( Bug 37762 ). "
+                    . "Have the client send a 'text/xml' content type, or normalize the Content-Type header in Apache." );
+        }
+
         # Gets rid of DOCTYPE stanzas, our parser chokes on them
         $xml =~ s/<!DOCTYPE[^>[]*(\[[^]]*\])?>//g;
 
@@ -99,7 +109,14 @@ sub ncip {
             $logger->warn("NCIP: response is not well-formed XML: $_");
         };
 
-        return $c->render( status => 200, format => 'xml', text => $response );
+        # Set the content type by hand, with the charset included. A bare
+        # 'application/xml' makes Koha 26.05 and later ( Bug 37762 ) treat the
+        # response body as JSON to be converted to XML, which fails on our
+        # already-XML body. This also matches the standalone server's
+        # default_mime_type.
+        $c->res->headers->content_type('application/xml; charset=utf-8');
+
+        return $c->render( status => 200, text => $response );
     }
     catch {
         $c->unhandled_exception($_);
