@@ -132,6 +132,7 @@ function build() {
         mkdir dist ;
         cp -r Koha dist/. ;
         sed -i -e "s/1970-01-01/${today}/g" ${pm_file_path_full_dist} ;
+        rm -f ${pm_file_path_full_dist}-e ;
         cd dist ;
         zip -r ../${release_filename} ./Koha ;
         cd .. ;
