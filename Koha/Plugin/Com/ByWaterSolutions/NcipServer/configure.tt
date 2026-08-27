@@ -4,6 +4,15 @@
 [% INCLUDE 'doc-head-open.inc' %]
  <title>Koha &rsaquo; Plugins &rsaquo; NCIP server &rsaquo; Configuration</title>
 [% INCLUDE 'doc-head-close.inc' %]
+  <style>
+    .CodeMirror {
+      border: 2px solid #eee;
+      height: auto;
+    }
+  </style>
+[% Asset.js( "lib/codemirror/codemirror.min.js" ) | $raw %]
+[% Asset.css("lib/codemirror/codemirror.min.css") | $raw %]
+[% Asset.css("lib/codemirror/lint.min.css") | $raw %]
 </head>
 
 <body>
@@ -20,22 +29,10 @@
             <a href="/cgi-bin/koha/plugins/run.pl?class=[% CLASS | uri %]&method=configure">NCIP Server</a>
         [% END %]
         [% WRAPPER breadcrumb_item %]
-            COnfiguration
+            Configuration
         [% END %]
     [% END #/ WRAPPER breadcrumbs %]
 [% END #/ WRAPPER sub-header.inc %]
-
-  <style>
-    .CodeMirror {
-      border: 2px solid #eee;
-      height: auto;
-    }
-  </style>
-
-[% Asset.js( "lib/codemirror/codemirror.min.js" ) | $raw %]
-[% Asset.css("lib/codemirror/codemirror.min.css") | $raw %]
-[% Asset.css("lib/codemirror/lint.min.css") | $raw %]
-</head>
 
 <div class="main container-fluid">
     <div class="row">
@@ -46,31 +43,32 @@
         [% FOREACH error IN errors %]
             <div class="dialog error">
                 [% SWITCH error.code %]
-                [% CASE 'SYSPREF_NOT_SET' %]<span>System preference not set (<a href="/cgi-bin/koha/admin/preferences.pl?op=search&searchfield=[% error.syspref | uri %]" target="_blank">[% error.syspref | html %]<a>)</span>
+                [% CASE 'CONFIGURATION_INVALID' %]<span>The configuration is not valid YAML and could not be loaded</span>
+                [% CASE 'AUTH_TOKEN_MISSING' %]<span>The configuration sets 'token_required' but no 'auth_token' is set</span>
+                [% CASE 'USERENV_NOT_SET' %]<span>The configuration does not set 'koha.userenv_borrowernumber'</span>
+                [% CASE 'USERENV_NOT_FOUND' %]<span>No patron found for 'koha.userenv_borrowernumber' ([% error.borrowernumber | html %])</span>
                 [% CASE %]<span>Unhandled error ([% error | html %])</span>
                 [% END %]
             </div>
         [% END %]
     [% END %]
-    <h2>[% strings.configuration_title %]</h2>
+    <h2>Configuration</h2>
     <br/>
       <form method="post">
         [% INCLUDE 'csrf-token.inc' %]
         <input type="hidden" name="class"  value="[% CLASS | html %]"/>
         <input type="hidden" name="method" value="configure"/>
-        <input type="hidden" name="step"   value="configure"/>
-        <input type="hidden" name="save"   value="1"/>
+        <input type="hidden" name="op"     value="cud-save"/>
         <div class="input-group">
-          <span class="input-group-addon" id="configuration_label">[% strings.configuration_title | html %]</span>
-          <textarea rows="200"
-                    columns="200"
+          <span class="input-group-addon" id="configuration_label">Configuration</span>
+          <textarea rows="20"
                     class="form-control"
                     aria-describedby="configuration_label"
                     name="configuration"
                     id="configuration">[%- configuration | $raw -%]</textarea>
         </div>
         <br/>
-        <button type="submit" value="Save" class="btn btn-default" type="button">[% strings.configuration_save | html %]</button>
+        <button type="submit" class="btn btn-default">Save configuration</button>
       </form>
   </div>
   <div class="yui-b">
