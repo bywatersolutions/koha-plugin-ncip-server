@@ -24,6 +24,11 @@ use Mojo::JSON qw(decode_json);
 use Try::Tiny;
 use YAML::XS;
 
+use C4::Context;
+use Koha::Config::SysPrefs;
+use Koha::Database;
+use Koha::Patrons;
+
 our $VERSION = "0.0.0";
 
 our $metadata = {
@@ -61,6 +66,59 @@ sub new {
     my $self = $class->SUPER::new($args);
 
     return $self;
+}
+
+=head3 install
+
+Migrates the NcipRequireToken and NcipToken system preferences used by the
+standalone NCIP server into the plugin configuration, then deletes them.
+
+=cut
+
+sub install {
+    my ($self) = @_;
+
+    my $require_pref = Koha::Config::SysPrefs->find('NcipRequireToken');
+    my $token_pref   = Koha::Config::SysPrefs->find('NcipToken');
+
+    return 1 unless $require_pref || $token_pref;
+
+    # Copy the syspref values into the plugin configuration and delete the
+    # sysprefs in a single transaction so we never end up half-migrated
+    my $schema = Koha::Database->new->schema;
+    $schema->txn_do(
+        sub {
+            my $config = {};
+
+            my $yaml = $self->retrieve_data('configuration');
+            if ( defined $yaml && length $yaml ) {
+                $config = YAML::XS::Load( Encode::encode_utf8($yaml) ) // {};
+            }
+
+            # Copy, but never clobber existing plugin configuration values
+            $config->{token_required} = $require_pref->value ? 1 : 0
+                if $require_pref && !exists $config->{token_required};
+            $config->{auth_token} = $token_pref->value
+                if $token_pref && !exists $config->{auth_token};
+
+            $self->store_data( { configuration => Encode::decode_utf8( YAML::XS::Dump($config) ) } );
+
+            $require_pref->delete if $require_pref;
+            $token_pref->delete   if $token_pref;
+        }
+    );
+
+    C4::Context->clear_syspref_cache();
+
+    return 1;
+}
+
+=head3 uninstall
+
+=cut
+
+sub uninstall {
+    return 1;
 }
 
 =head3 configure
@@ -109,21 +167,6 @@ sub api_routes {
     return $spec;
 }
 
-=head3 api_routes_v3
-
-Method that returns the API routes to be merged into Koha's
-
-=cut
-
-sub api_routes_v3 {
-    my ( $self, $args ) = @_;
-
-    my $spec_str = $self->mbf_read('openapiv3.json');
-    my $spec     = decode_json($spec_str);
-
-    return $spec;
-}
-
 =head3 api_namespace
 
 Method that returns the namespace for the plugin API to be put on
@@ -151,9 +194,19 @@ sub check_configuration {
 
     my @errors;
 
-    # TODO: Add checks here, this is just an example
-    push @errors, { code => 'SYSPREF_NOT_SET', syspref => 'ILLModule' }
-        unless C4::Context->preference('ILLModule');
+    my $config = $self->configuration( { force => 1 } );
+    return [ { code => 'CONFIGURATION_INVALID' } ] unless defined $config;
+
+    push @errors, { code => 'AUTH_TOKEN_MISSING' }
+        if $config->{token_required} && !$config->{auth_token};
+
+    my $borrowernumber = $config->{koha}->{userenv_borrowernumber};
+    if ( !$borrowernumber ) {
+        push @errors, { code => 'USERENV_NOT_SET' };
+    }
+    elsif ( !Koha::Patrons->find($borrowernumber) ) {
+        push @errors, { code => 'USERENV_NOT_FOUND', borrowernumber => $borrowernumber };
+    }
 
     return \@errors;
 }
@@ -167,14 +220,20 @@ Accessor for the de-serialized plugin configuration
 sub configuration {
     my ( $self, $params ) = @_;
 
-    unless ( !$self->{_configuration} || $params->{force} ) {
+    if ( !$self->{_configuration} || $params->{force} ) {
 
-        eval {
-            $self->{_configuration} = YAML::XS::Load( Encode::encode_utf8( $self->retrieve_data('configuration') ) );
-        };
+        my $yaml = $self->retrieve_data('configuration');
 
-        warn "[NCIP CONFIG ERROR]" . $@
-            if $@;
+        if ( defined $yaml && length $yaml ) {
+            eval { $self->{_configuration} = YAML::XS::Load( Encode::encode_utf8($yaml) ); };
+
+            if ($@) {
+                warn "[NCIP CONFIG ERROR]" . $@;
+                return;
+            }
+        }
+
+        $self->{_configuration} //= {};
     }
 
     return $self->{_configuration};
@@ -189,7 +248,9 @@ sub configuration {
 sub requires_token {
     my ($self) = @_;
 
-    return $self->configuration->{token_required} ? 1 : 0;
+    my $config = $self->configuration // {};
+
+    return $config->{token_required} ? 1 : 0;
 }
 
 =head3 is_token_valid
@@ -203,7 +264,9 @@ Compares the passed token with the configured one.
 sub is_token_valid {
     my ($self, $token) = @_;
 
-    my $configured_token = $self->configuration->{auth_token} // '';
+    my $config = $self->configuration // {};
+
+    my $configured_token = $config->{auth_token} // '';
 
     return $configured_token eq $token;
 }
