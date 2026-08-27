@@ -15,7 +15,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        koha-version: [main, stable, oldstable]
+        # 24.05 is pinned because it is the plugin's declared minimum_version
+        koha-version: [main, stable, oldstable, '24.05']
 
     steps:
 
@@ -23,14 +24,29 @@ jobs:
 
     - name: Get Koha Version Branch Name
       id: koha-version
+      if: ${{ !contains(matrix.koha-version, '.') }}
       uses: "bywatersolutions/github-action-koha-get-version-by-label@master"
       with:
         version-label: "${{ matrix.koha-version }}"
 
+    - name: Determine Koha branch and docker image
+      id: koha
+      run: |
+        if [[ "${{ matrix.koha-version }}" == *.* ]]; then
+          echo "branch=${{ matrix.koha-version }}.x" >> $GITHUB_OUTPUT
+          echo "image=${{ matrix.koha-version }}" >> $GITHUB_OUTPUT
+        elif [ "${{ matrix.koha-version }}" == "main" ]; then
+          echo "branch=${{ steps.koha-version.outputs.current-branch-name }}" >> $GITHUB_OUTPUT
+          echo "image=main" >> $GITHUB_OUTPUT
+        else
+          echo "branch=${{ steps.koha-version.outputs.current-branch-name }}" >> $GITHUB_OUTPUT
+          echo "image=${{ steps.koha-version.outputs.version-major-minor }}" >> $GITHUB_OUTPUT
+        fi
+
     - name: Check out Koha and koha-testing-docker
       run: |
         cd ..
-        git clone --branch ${{ steps.koha-version.outputs.current-branch-name }} --single-branch --depth 1 https://github.com/Koha-Community/Koha.git kohaclone
+        git clone --branch ${{ steps.koha.outputs.branch }} --single-branch --depth 1 https://github.com/Koha-Community/Koha.git kohaclone
         git clone --depth 1 https://gitlab.com/koha-community/koha-testing-docker.git
 
     - name: Start koha-testing-docker
@@ -38,7 +54,7 @@ jobs:
         export KTD_HOME="$GITHUB_WORKSPACE/../koha-testing-docker"
         export SYNC_REPO="$GITHUB_WORKSPACE/../kohaclone"
         export LOCAL_USER_ID="$(id -u)" # Needed for koha-testing-docker
-        export KOHA_IMAGE="${{ matrix.koha-version == 'main' && 'main' || steps.koha-version.outputs.version-major-minor }}"
+        export KOHA_IMAGE="${{ steps.koha.outputs.image }}"
         echo "Using koha/koha-testing:$KOHA_IMAGE"
         cp "$KTD_HOME/env/defaults.env" "$KTD_HOME/.env"
         sudo sysctl -w vm.max_map_count=262144
@@ -47,12 +63,12 @@ jobs:
 
     - name: Install plugin dependencies
       run: |
-        docker exec kohadev-koha-1 bash -c 'cpanm XML::Tidy'
+        docker exec kohadev-koha-1 bash -c 'cpanm --notest XML::Hash'
 
     - name: Run tests
       run: |
         docker cp . kohadev-koha-1:/var/lib/koha/kohadev/plugins
-        docker exec kohadev-koha-1 bash -c 'prove /var/lib/koha/kohadev/plugins/t'
+        docker exec kohadev-koha-1 bash -c 'cd /kohadevbox/koha && prove -r /var/lib/koha/kohadev/plugins/t'
 
     - name: Show koha logs on failure
       if: failure()
