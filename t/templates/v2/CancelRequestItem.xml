@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<NCIPMessage version="http://www.niso.org/schemas/ncip/v2_02/ncip_v2_02.xsd" xmlns="http://www.niso.org/2008/ncip">
+    <CancelRequestItem>
+        <InitiationHeader>
+            <FromAgencyId>
+                <AgencyId>KOHA</AgencyId>
+            </FromAgencyId>
+            <ToAgencyId>
+                <AgencyId>[% pickup_branchcode %]</AgencyId>
+            </ToAgencyId>
+        </InitiationHeader>
+        <UserId>
+            <UserIdentifierType>Barcode Id</UserIdentifierType>
+            <UserIdentifierValue>[% user_identifier %]</UserIdentifierValue>
+        </UserId>
+        <RequestId>
+            <AgencyId>KOHA</AgencyId>
+            <RequestIdentifierValue>[% request_id %]</RequestIdentifierValue>
+        </RequestId>
+        <RequestType>Loan</RequestType>
+    </CancelRequestItem>
+</NCIPMessage>

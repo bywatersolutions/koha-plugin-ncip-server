@@ -1,0 +1,44 @@
+<[%- message_type -%]>
+    <ResponseHeader>
+        <FromAgencyId>
+            <UniqueAgencyId>
+                <Scheme>/ncip/v1_0/koha</Scheme>
+                <Value>[% from_agency | trim %]</Value>
+            </UniqueAgencyId>
+        </FromAgencyId>
+        <ToAgencyId>
+            <UniqueAgencyId>
+                <Scheme>/ncip/v1_0/koha</Scheme>
+                <Value>[% to_agency | trim %]</Value>
+            </UniqueAgencyId>
+        </ToAgencyId>
+    </ResponseHeader>
+
+    [%- FOREACH p IN problems -%]
+        <Problem>
+            <ProcessingError>
+
+                <ProcessingErrorType>
+                    <Scheme>http://www.niso.org/ncip/v1_0/schemes/processingerrortype/lookupuserprocessingerror.scm</Scheme>
+                    <Value>[% p.problem_type | xml %]</Value>
+                </ProcessingErrorType>
+
+                [% IF p.problem_element || p.problem_value %]
+                    <ProcessingErrorElement>
+                        <ElementName>[% p.problem_element | xml %]</ElementName>
+                        <ProcessingErrorValue>[% p.problem_value | xml %]</ProcessingErrorValue>
+                    </ProcessingErrorElement>
+                [% END %]
+
+                <!--
+                [%- IF p.problem_detail -%]
+                    <ProcessingErrorDetail>
+                        <Value>[% p.problem_detail | xml %]</Value>
+                    </ProcessingErrorDetail>
+                [%- END -%]
+                -->
+
+            </ProcessingError>
+        </Problem>
+    [%- END -%]
+</[%- message_type -%]>

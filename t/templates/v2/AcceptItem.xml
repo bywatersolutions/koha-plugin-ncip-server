@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<NCIPMessage version="http://www.niso.org/schemas/ncip/v2_0/ncip_v2_0.xsd" xmlns="http://www.niso.org/2008/ncip">
+  <AcceptItem>
+    <RequestId>
+      <AgencyId>KOHA</AgencyId>
+      <RequestIdentifierValue>KOHA-123456789</RequestIdentifierValue>
+    </RequestId>
+    <RequestedActionType>Hold For Pickup</RequestedActionType>
+    <UserId>
+      <AgencyId>KOHA</AgencyId>
+      <UserIdentifierValue>[% patron_cardnumber %]</UserIdentifierValue>
+    </UserId>
+    <ItemId>
+      <AgencyId>PPU</AgencyId>
+      <ItemIdentifierValue>345678912</ItemIdentifierValue>
+    </ItemId>
+    <ItemOptionalFields>
+      <BibliographicDescription>
+        <Author>Guertin, Mike.</Author>
+        <BibliographicItemId>
+          <BibliographicItemIdentifier>1561584630</BibliographicItemIdentifier>
+          <BibliographicItemIdentifierCode>
+            <Scheme>http://www.niso.org/ncip/v1_0/imp1/schemes/bibliographicitemidentifiercode/bibliographicitemidentifiercode.scm</Scheme>
+            <Value>ISBN</Value>
+          </BibliographicItemIdentifierCode>
+        </BibliographicItemId>
+        <PublicationDate>c2001.</PublicationDate>
+        <Publisher>Taunton Press ; Publishers Group West [distributor]</Publisher>
+        <Title>Precision framing</Title>
+        <MediumType>
+          <Scheme>http://www.niso.org/ncip/v1_0/imp1/schemes/mediumtype/mediumtype.scm</Scheme>
+          <Value>Book</Value>
+        </MediumType>
+      </BibliographicDescription>
+      <ItemDescription>
+        <CallNumber>694.2 .G84 2001</CallNumber>
+      </ItemDescription>
+    </ItemOptionalFields>
+    <PickupLocation>[% pickup_location %]</PickupLocation>
+  </AcceptItem>
+</NCIPMessage>
