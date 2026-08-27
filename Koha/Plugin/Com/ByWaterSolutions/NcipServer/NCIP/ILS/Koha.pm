@@ -13,10 +13,9 @@
 #      CREATED: 05/11/13 11:14:09
 #     REVISION: ---
 #===============================================================================
-package NCIP::ILS::Koha;
+package Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::ILS::Koha;
 
 use Modern::Perl;
-use Object::Tiny qw{ name };
 use Try::Tiny;
 use Carp qw{ cluck };
 
@@ -59,6 +58,14 @@ use Koha::Holds;
 use Koha::Items;
 use Koha::Libraries;
 use Koha::Patrons;
+
+# Constructor and 'name' accessor, replaces Object::Tiny which is not a Koha dependency
+sub new {
+    my ( $class, %args ) = @_;
+    return bless {%args}, $class;
+}
+
+sub name { $_[0]->{name} }
 
 sub itemdata {
     my $self    = shift;

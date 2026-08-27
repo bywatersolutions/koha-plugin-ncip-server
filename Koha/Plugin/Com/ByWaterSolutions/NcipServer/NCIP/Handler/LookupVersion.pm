@@ -11,15 +11,15 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 # ---------------------------------------------------------------
-package NCIP::Handler::LookupVersion;
+package Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::LookupVersion;
 
 =head1
 
-  NCIP::Handler::LookupVersion
+  Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::LookupVersion
 
 =head1 SYNOPSIS
 
-    Not to be called directly, NCIP::Handler will pick the appropriate Handler
+    Not to be called directly, Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler will pick the appropriate Handler
     object, given a message type
 
 =head1 FUNCTIONS
@@ -28,10 +28,10 @@ package NCIP::Handler::LookupVersion;
 
 use Modern::Perl;
 
-use NCIP::Handler;
-use NCIP::Const;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Const;
 
-our @ISA = qw(NCIP::Handler);
+our @ISA = qw(Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler);
 
 sub handle {
     my $self   = shift;
@@ -45,7 +45,7 @@ sub handle {
                 from_agency  => $to,
                 to_agency    => $from,
                 message_type => 'LookupVersionResponse',
-                versions     => [NCIP::Const::SUPPORTED_VERSIONS],
+                versions     => [Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Const::SUPPORTED_VERSIONS],
 
             }
         );

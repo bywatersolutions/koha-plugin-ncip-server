@@ -1,12 +1,12 @@
-package NCIP::Handler::CancelRequestItem;
+package Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::CancelRequestItem;
 
 =head1
 
-  NCIP::Handler::CancelRequestItem
+  Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::CancelRequestItem
 
 =head1 SYNOPSIS
 
-    Not to be called directly, NCIP::Handler will pick the appropriate Handler 
+    Not to be called directly, Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler will pick the appropriate Handler 
     object, given a message type
 
 =head1 FUNCTIONS
@@ -15,10 +15,10 @@ package NCIP::Handler::CancelRequestItem;
 
 use Modern::Perl;
 
-use NCIP::Handler;
-use NCIP::User;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::User;
 
-our @ISA = qw(NCIP::Handler);
+our @ISA = qw(Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler);
 
 sub handle {
     my $self   = shift;

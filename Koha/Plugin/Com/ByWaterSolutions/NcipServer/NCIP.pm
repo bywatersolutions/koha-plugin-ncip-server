@@ -1,49 +1,72 @@
-package NCIP;
-use NCIP::Configuration;
-use NCIP::Handler;
-use Modern::Perl;
-use XML::LibXML;
-use Try::Tiny;
-use Module::Load;
-use Template;
-use Log::Log4perl;
+package Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP;
 
-use Object::Tiny qw{xmldoc config namespace ils};
+use Modern::Perl;
+
+use Cwd qw(abs_path);
+use File::Basename qw(dirname);
+use Template;
+use Try::Tiny;
+use XML::LibXML;
+
+use Koha::Logger;
+
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::ILS::Koha;
+
+use constant NAMESPACE => 'http://www.niso.org/2008/ncip';
 
 our $VERSION           = '0.01';
 our $strict_validation = 0;        # move to config file
 
 =head1 NAME
-  
-    NCIP
+
+    Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP
 
 =head1 SYNOPSIS
 
-    use NCIP;
-    my $nicp = NCIP->new($config_dir);
+    use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP;
+    my $ncip = Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP->new();
 
 =head1 FUNCTIONS
 
 =cut
 
 sub new {
-    my $proto      = shift;
-    my $class      = ref $proto || $proto;
-    my $config_dir = shift;
-    my $self       = {};
-    my $config     = NCIP::Configuration->new($config_dir);
-    $self->{config}    = $config;
-    $self->{namespace} = $config->('NCIP.namespace.value');
-    Log::Log4perl->init( $config_dir . "/log4perl.conf" );
+    my $proto = shift;
+    my $class = ref $proto || $proto;
 
-    # load the ILS dependent module
-    my $module = 'NCIP::ILS::' . $config->('NCIP.ils.value');
-    load $module || die "Can not load ILS module $module";
-    my $ils = $module->new( name => $config->('NCIP.ils.value') );
-    $self->{'ils'} = $ils;
+    my $self = {
+        namespace     => NAMESPACE,
+        ils           => Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::ILS::Koha->new( name => 'Koha' ),
+        templates_dir => abs_path( dirname(__FILE__) . '/templates' ),
+    };
+
     return bless $self, $class;
-
 }
+
+=head2 namespace
+
+=cut
+
+sub namespace { $_[0]->{namespace} }
+
+=head2 ils
+
+=cut
+
+sub ils { $_[0]->{ils} }
+
+=head2 xmldoc
+
+=cut
+
+sub xmldoc { $_[0]->{xmldoc} }
+
+=head2 templates_dir
+
+=cut
+
+sub templates_dir { $_[0]->{templates_dir} }
 
 =head2 process_request()
 
@@ -67,14 +90,14 @@ sub process_request {
         return $output;
     }
 
-    my $handler = NCIP::Handler->new(
+    my $handler = Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler->new(
         {
             namespace    => $self->namespace(),
             type         => $request_type,
             ils          => $self->ils,
             config       => $config,
             ncip_version => $ncip_version,
-            template_dir => $self->config->('NCIP.templates.value'),
+            template_dir => $self->templates_dir,
         }
     );
 
@@ -89,7 +112,7 @@ sub handle_initiation {
     my $self = shift;
     my $xml  = shift;
     my $dom;
-    my $log = Log::Log4perl->get_logger("NCIP");
+    my $log = Koha::Logger->get( { category => 'plugin.ncipserver' } );
     eval { $dom = XML::LibXML->load_xml( string => $xml ); };
     if ($@) {
         $log->info("Invalid xml we can not parse it ");
@@ -187,8 +210,12 @@ sub _error {
     $vars->{'message_type'} =
       'ItemRequestedResponse';    # No idea what this type should be
     my $template = Template->new(
-        { INCLUDE_PATH => $self->config->('NCIP.templates.value'), } );
+        { INCLUDE_PATH => $self->templates_dir, } );
     my $output;
+
+    # There is no top level 'problem.tt' template, so this process call fails
+    # and $output stays undef. The caller then falls back to the "It works!"
+    # response, which clients probing the endpoint expect. Keep it that way.
     $template->process( 'problem.tt', $vars, \$output );
     return $output;
 }

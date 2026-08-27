@@ -11,11 +11,11 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 # ---------------------------------------------------------------
-package NCIP::Const;
+package Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Const;
 
 # Constants for NCIP.pm and family.
 
-# We don't use Exporter, so we must refer to these with NCIP::Const::
+# We don't use Exporter, so we must refer to these with Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Const::
 # prefix.
 
 # Versions of NCIP that we support as indicated by a list of schema

@@ -1,12 +1,12 @@
-package NCIP::Handler::RequestItem;
+package Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::RequestItem;
 
 =head1
 
-  NCIP::Handler::RequestItem
+  Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::RequestItem
 
 =head1 SYNOPSIS
 
-    Not to be called directly, NCIP::Handler will pick the appropriate Handler 
+    Not to be called directly, Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler will pick the appropriate Handler 
     object, given a message type
 
 =head1 FUNCTIONS
@@ -15,9 +15,9 @@ package NCIP::Handler::RequestItem;
 
 use Modern::Perl;
 
-use NCIP::Handler;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler;
 
-our @ISA = qw(NCIP::Handler);
+our @ISA = qw(Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler);
 
 sub handle {
     my $self   = shift;

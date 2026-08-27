@@ -1,4 +1,4 @@
-package NCIP::User;
+package Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::User;
 
 use base qw(Class::Accessor);
 
@@ -14,7 +14,7 @@ use base qw(Class::Accessor);
 # User Id
 
 # Make accessors for the ones that makes sense
-NCIP::User->mk_accessors(qw(userid ils userdata));
+Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::User->mk_accessors(qw(userid ils userdata));
 
 sub initialise {
     my ($self, $config) = @_;

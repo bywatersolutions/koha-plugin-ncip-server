@@ -1,12 +1,12 @@
-package NCIP::Handler::LookupItem;
+package Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::LookupItem;
 
 =head1
 
-  NCIP::Handler::LookupItem
+  Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::LookupItem
 
 =head1 SYNOPSIS
 
-    Not to be called directly, NCIP::Handler will pick the appropriate Handler 
+    Not to be called directly, Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler will pick the appropriate Handler 
     object, given a message type
 
 =head1 FUNCTIONS
@@ -15,10 +15,10 @@ package NCIP::Handler::LookupItem;
 
 use Modern::Perl;
 
-use NCIP::Handler;
-use NCIP::Item;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Item;
 
-our @ISA = qw(NCIP::Handler);
+our @ISA = qw(Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler);
 
 sub handle {
     my $self   = shift;
@@ -30,7 +30,7 @@ sub handle {
             'ItemIdentifierValue' );
         $item_id = $item_id->textContent();
 
-        my $item = NCIP::Item->new(
+        my $item = Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Item->new(
             {
                 itemid => $item_id,
                 ils    => $self->ils,

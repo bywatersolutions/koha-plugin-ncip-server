@@ -1,12 +1,12 @@
-package NCIP::Handler::LookupUser;
+package Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::LookupUser;
 
 =head1
 
-  NCIP::Handler::LookupUser
+  Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::LookupUser
 
 =head1 SYNOPSIS
 
-    Not to be called directly, NCIP::Handler will pick the appropriate Handler
+    Not to be called directly, Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler will pick the appropriate Handler
     object, given a message type
 
 =head1 FUNCTIONS
@@ -15,10 +15,10 @@ package NCIP::Handler::LookupUser;
 
 use Modern::Perl;
 
-use NCIP::Handler;
-use NCIP::User;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::User;
 
-our @ISA = qw(NCIP::Handler);
+our @ISA = qw(Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler);
 
 sub handle {
     my $self   = shift;
@@ -80,7 +80,7 @@ sub handle {
         # We may get a password, username combo instead of userid
         # Need to deal with that also
 
-        my $user = NCIP::User->new( { userid => $user_id, ils => $self->ils } );
+        my $user = Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::User->new( { userid => $user_id, ils => $self->ils } );
         $user->initialise($config);
 
         if ($pin) {

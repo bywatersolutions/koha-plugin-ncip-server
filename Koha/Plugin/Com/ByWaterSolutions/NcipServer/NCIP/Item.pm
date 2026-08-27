@@ -1,9 +1,9 @@
-package NCIP::Item;
+package Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Item;
 
 use base qw(Class::Accessor);
 
 # Make accessors for the ones that makes sense
-NCIP::Item->mk_accessors(qw(itemid ils));
+Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Item->mk_accessors(qw(itemid ils));
 
 # Call the apppropriate subroutine in the ILS specific code and get the data
 

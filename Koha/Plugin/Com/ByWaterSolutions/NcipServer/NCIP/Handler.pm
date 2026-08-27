@@ -1,4 +1,4 @@
-package NCIP::Handler;
+package Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler;
 #
 #===============================================================================
 #
@@ -35,12 +35,12 @@ package NCIP::Handler;
 
 =head1 NAME
 
-    NCIP::Handler
+    Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler
 
 =head1 SYNOPSIS
 
-    use NCIP::Handler;
-    my $handler = NCIP::Handler->new( { namespace    => $namespace,
+    use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler;
+    my $handler = Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler->new( { namespace    => $namespace,
                                         type         => $request_type,
                                         ils          => $ils,
                                         template_dir => $templates
@@ -50,16 +50,39 @@ package NCIP::Handler;
 =cut
 
 use Modern::Perl;
-use Object::Tiny qw{ type namespace ils templates };
-use Module::Load;
 use Template;
-use FindBin;
-use Cwd qw/realpath/;
+
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::AcceptItem;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::CancelRequestItem;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::CheckInItem;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::CheckOutItem;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::DeleteItem;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::LookupItem;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::LookupUser;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::LookupVersion;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::RenewItem;
+use Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::RequestItem;
+
+# The request type comes straight from the incoming XML, so it must be
+# checked against the list of handlers we actually provide rather than
+# used to load an arbitrary class
+my %SUPPORTED_TYPES = map { $_ => 1 } qw(
+    AcceptItem
+    CancelRequestItem
+    CheckInItem
+    CheckOutItem
+    DeleteItem
+    LookupItem
+    LookupUser
+    LookupVersion
+    RenewItem
+    RequestItem
+);
 
 =head2 new()
 
     Set up a new handler object, this will actually create one of the request type
-    eg NCIP::Handler::LookupUser
+    eg Koha::Plugin::Com::ByWaterSolutions::NcipServer::NCIP::Handler::LookupUser
 
 =cut
 
@@ -67,10 +90,10 @@ sub new {
     my $class  = shift;
     my $params = shift;
 
-    my $subclass = __PACKAGE__ . "::" . $params->{type};
-    load $subclass || die "Can't load module $subclass";
+    die "Unsupported NCIP request type '$params->{type}'\n"
+        unless $SUPPORTED_TYPES{ $params->{type} };
 
-    my $appdir = realpath("$FindBin::Bin/..");
+    my $subclass = __PACKAGE__ . "::" . $params->{type};
 
     my $self = bless {
         type         => $params->{type},
@@ -78,11 +101,35 @@ sub new {
         ils          => $params->{ils},
         config       => $params->{config},
         ncip_version => $params->{ncip_version},
-        templates    => "$appdir/templates",
+        templates    => $params->{template_dir},
     }, $subclass;
 
     return $self;
 }
+
+=head2 type
+
+=cut
+
+sub type { $_[0]->{type} }
+
+=head2 namespace
+
+=cut
+
+sub namespace { $_[0]->{namespace} }
+
+=head2 ils
+
+=cut
+
+sub ils { $_[0]->{ils} }
+
+=head2 templates
+
+=cut
+
+sub templates { $_[0]->{templates} }
 
 =head2 xpc()
 
