@@ -18,16 +18,21 @@
 use Modern::Perl;
 
 use Test::More;
-use File::Spec;
+use Cwd qw(abs_path);
 use File::Find;
+use FindBin qw($Bin);
 
 =head1 DESCRIPTION
 
+Loads every module in the plugin's Koha/ tree. The vendored NCIP modules
+live in the plugin namespace, so their path-derived module names are the
+real package names.
+
 =cut
 
-my $lib = '/var/lib/koha/kohadev/plugins'; # Could be changed to $Bin/..
+my $root = abs_path("$Bin/..");
 
-unshift( @INC, $lib );
+unshift( @INC, $root );
 unshift( @INC, '/kohadevbox/koha/' );
 unshift( @INC, '/kohadevbox/koha/misc/translator/' );
 unshift( @INC, '/kohadevbox/koha/t/lib/' );
@@ -39,13 +44,12 @@ find(
         wanted   => sub {
             my $m = $_;
             return unless $m =~ s/[.]pm$//;
-            $m =~ s{^.*/Koha/}{Koha/};
+            $m =~ s{^\Q$root\E/}{};
             $m =~ s{/}{::}g;
             use_ok($m) || BAIL_OUT("***** PROBLEMS LOADING FILE '$m'");
         },
     },
-    $lib
+    "$root/Koha"
 );
 
 done_testing();
-
