@@ -1,9 +1,9 @@
 name: NCIP server plugin
-author: Kyle M Hall
-date_authored: 2020-05-13
+author: ByWater Solutions
+date_authored: 2025-04-25
 date_updated: 1900-01-01
-minimum_version: 19.11.06
+minimum_version: 24.05
 maximum_version:
 version: {VERSION}
-description: This plugin enables sending of phone message to patrons via Twilio.
+description: This plugin implements an NCIP server on top of Koha's REST API. It replaces the standalone ncip-server application.
 module: Koha::Plugin::Com::ByWaterSolutions::NcipServer
