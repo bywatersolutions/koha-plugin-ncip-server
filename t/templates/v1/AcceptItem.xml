@@ -1,0 +1,55 @@
+<!DOCTYPE NCIPMessage PUBLIC "-//NISO//NCIP DTD Version 1.0//EN" "http://www.niso.org/ncip/v1_0/imp1/dtd/ncip_v1_0.dtd">
+<NCIPMessage version="http://www.niso.org/ncip/v1_0/imp1/dtd/ncip_v1_0.dtd">
+    <AcceptItem>
+        <InitiationHeader>
+            <FromAgencyId>
+                <UniqueAgencyId>
+                    <Scheme datatype="string">http://www.niso.org/ncip/v1_0/imp1/dtd/ncip_v1_0.dtd?target=get_scheme_values&amp;scheme=UniqueAgencyId</Scheme>
+                    <Value datatype="string">ILL SYSTEM</Value>
+                </UniqueAgencyId>
+            </FromAgencyId>
+            <ToAgencyId>
+                <UniqueAgencyId>
+                    <Scheme datatype="string">http://www.niso.org/ncip/v1_0/imp1/dtd/ncip_v1_0.dtd?target=get_scheme_values&amp;scheme=UniqueAgencyId</Scheme>
+                    <Value datatype="string">[% pickup_location %]</Value>
+                </UniqueAgencyId>
+            </ToAgencyId>
+        </InitiationHeader>
+        <UniqueRequestId>
+            <UniqueAgencyId>
+                <Scheme datatype="string">http://www.niso.org/ncip/v1_0/imp1/dtd/ncip_v1_0.dtd?target=get_scheme_values&amp;scheme=UniqueAgencyId</Scheme>
+                <Value datatype="string">KOHA</Value>
+            </UniqueAgencyId>
+            <RequestIdentifierValue datatype="string">KOHA-123456789</RequestIdentifierValue>
+        </UniqueRequestId>
+        <RequestedActionType>
+            <Scheme datatype="string">http://www.niso.org/ncip/v1_0/imp1/schemes/requestedactiontype/requestedactiontype.scm</Scheme>
+            <Value datatype="string">Hold For Pickup</Value>
+        </RequestedActionType>
+        <UniqueUserId>
+            <UniqueAgencyId>
+                <Scheme datatype="string">http://www.niso.org/ncip/v1_0/imp1/dtd/ncip_v1_0.dtd?target=get_scheme_values&amp;scheme=UniqueAgencyId</Scheme>
+                <Value datatype="string">KOHA</Value>
+            </UniqueAgencyId>
+            <UserIdentifierValue datatype="string">[% patron_cardnumber %]</UserIdentifierValue>
+        </UniqueUserId>
+        <UniqueItemId>
+            <ItemIdentifierValue datatype="string">[% item_barcode %]</ItemIdentifierValue>
+        </UniqueItemId>
+        <ItemOptionalFields>
+            <BibliographicDescription>
+                <Author datatype="string">Guertin, Mike.</Author>
+                <PublicationDate datatype="string">c2001.</PublicationDate>
+                <Publisher datatype="string">Taunton Press ; Publishers Group West [distributor]</Publisher>
+                <Title datatype="string">Precision framing</Title>
+                <MediumType>
+                    <Scheme datatype="string">http://www.niso.org/ncip/v1_0/imp1/schemes/mediumtype/mediumtype.scm</Scheme>
+                    <Value datatype="string">Book</Value>
+                </MediumType>
+            </BibliographicDescription>
+            <ItemDescription>
+                <CallNumber datatype="string">694.2 .G84 2001</CallNumber>
+            </ItemDescription>
+        </ItemOptionalFields>
+    </AcceptItem>
+</NCIPMessage>

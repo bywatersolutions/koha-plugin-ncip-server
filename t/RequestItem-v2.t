@@ -5,7 +5,7 @@ use Modern::Perl;
 use FindBin qw($Bin);
 use lib ( "$Bin/lib", "$Bin/..", '/kohadevbox/koha' );
 
-use Test::More tests => 5;
+use Test::More tests => 8;
 use Test::Mojo;
 
 use NCIPTest;
@@ -191,6 +191,110 @@ subtest 'Test RequestItem with valid user and valid item' => sub {
 
     my $problem_detail = $dom->{NCIPMessage}->{RequestItemResponse}->{Problem}->{ProblemDetail}->{text};
     ok( $problem_detail, "User owes too much." );
+};
+
+subtest 'Test RequestItem with patron over maxoutstanding' => sub {
+    plan tests => 4;
+
+    C4::Context->set_preference('maxoutstanding', 1);
+
+    my $account = $patron_1->account;
+    $account->add_debit(
+        {
+            interface => 'commandline',
+            amount      => '9.99',
+            type        => 'MANUAL',
+            description => "Test fee",
+            note        => "Test fee note",
+        }
+    );
+
+    my $ncip_message = NCIPTest::render_fixture(
+        'v2/RequestItem.xml',
+        {
+            user_identifier   => $patron_1->cardnumber,
+            biblionumber      => $item_1->biblionumber,
+            pickup_branchcode => $item_1->holdingbranch,
+        }
+    );
+
+    $dom = NCIPTest::post_ncip( $t, $ncip_message );
+
+    is( $dom->{NCIPMessage}->{RequestItemResponse}->{Problem}->{ProblemType}->{text}, 'User Blocked', "RequestItemResponse for blocked patron returns correct ProblemType" );
+    is( $dom->{NCIPMessage}->{RequestItemResponse}->{Problem}->{ProblemDetail}->{text}, 'User owes too much.', "RequestItemResponse for blocked patron returns correct ProblemDetail" );
+    is( $dom->{NCIPMessage}->{RequestItemResponse}->{Problem}->{ProblemElement}->{text}, 'UserIdentifierValue', "RequestItemResponse for blocked patron returns correct ProblemElement" );
+    is( $dom->{NCIPMessage}->{RequestItemResponse}->{Problem}->{ProblemValue}->{text}, $patron_1->cardnumber, "RequestItemResponse for blocked patron returns correct ProblemValue" );
+};
+
+subtest 'Test RequestItem with ignore_item_requests' => sub {
+    plan tests => 3;
+
+    $koha_config{ignore_item_requests} = 1;
+    NCIPTest::set_config( $plugin, { koha => \%koha_config } );
+
+    my $holds_count = Koha::Holds->search()->count;
+
+    my $ncip_message = NCIPTest::render_fixture(
+        'v2/RequestItem.xml',
+        {
+            user_identifier   => $patron_1->cardnumber,
+            biblionumber      => $item_1->biblionumber,
+            pickup_branchcode => $item_1->holdingbranch,
+        }
+    );
+
+    $dom = NCIPTest::post_ncip( $t, $ncip_message );
+
+    is(
+        $dom->{NCIPMessage}->{RequestItemResponse}->{RequestId}->{RequestIdentifierValue}->{text},
+        '0',
+        'RequestItemResponse returns request id 0 when ignore_item_requests is enabled'
+    );
+    is( $dom->{NCIPMessage}->{RequestItemResponse}->{Problem}, undef, 'RequestItemResponse reports no problem' );
+    is( Koha::Holds->search()->count, $holds_count, 'No hold has been placed' );
+
+    $koha_config{ignore_item_requests} = 0;
+    NCIPTest::set_config( $plugin, { koha => \%koha_config } );
+};
+
+subtest 'Test RequestItem by ISBN' => sub {
+    plan tests => 5;
+
+    my $patron_2 = $builder->build_object(
+        {
+            class => 'Koha::Patrons',
+            value => {
+                branchcode   => $library->id,
+                categorycode => $patron_category->{categorycode},
+                dateexpiry   => '2032-12-31',
+            }
+        }
+    );
+
+    my $item_2 = $builder->build_sample_item( { library => $library->id } );
+    my $isbn   = 'NCIP-ISBN-' . $item_2->biblionumber;
+    $item_2->biblio->biblioitem->set( { isbn => $isbn } )->store();
+
+    my $ncip_message = NCIPTest::render_fixture(
+        'v2/RequestItem.xml',
+        {
+            user_identifier   => $patron_2->cardnumber,
+            isbn              => $isbn,
+            pickup_branchcode => $item_2->holdingbranch,
+        }
+    );
+
+    $dom = NCIPTest::post_ncip( $t, $ncip_message );
+
+    my $hold_id = $dom->{NCIPMessage}->{RequestItemResponse}->{RequestId}->{RequestIdentifierValue}->{text};
+    ok( $hold_id, "RequestItemResponse returned a request id" );
+
+    my $hold = Koha::Holds->find( $hold_id );
+    ok( $hold, "Request id is valid" );
+
+    is( $hold->biblionumber, $item_2->biblionumber, "Request is for the record with the matching ISBN" );
+    is( $hold->itemnumber, undef, "Request is a record level hold" );
+    is( $hold->borrowernumber, $patron_2->id, "Request is for the correct patron" );
 };
 
 $schema->storage->txn_rollback;

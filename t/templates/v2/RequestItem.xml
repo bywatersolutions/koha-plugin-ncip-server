@@ -21,6 +21,14 @@
         <BibliographicRecordIdentifierCode>SYSNUMBER</BibliographicRecordIdentifierCode>
       </BibliographicRecordId>
     </BibliographicId>
+[%- IF isbn %]
+    <BibliographicId>
+      <BibliographicItemId>
+        <BibliographicItemIdentifier>[% isbn %]</BibliographicItemIdentifier>
+        <BibliographicItemIdentifierCode>ISBN</BibliographicItemIdentifierCode>
+      </BibliographicItemId>
+    </BibliographicId>
+[%- END %]
     <RequestId>
       <AgencyId>KOHA</AgencyId>
       <RequestIdentifierValue>483580</RequestIdentifierValue>

@@ -5,7 +5,7 @@ use Modern::Perl;
 use FindBin qw($Bin);
 use lib ( "$Bin/lib", "$Bin/..", '/kohadevbox/koha' );
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::NoWarnings;
 use Test::Warn;
 use Test::Mojo;
@@ -90,6 +90,18 @@ subtest 'request body converted to JSON by Koha ( Bug 37762 )' => sub {
         '/api/v1/contrib/ncip_server/ncip' => { 'Content-Type' => 'application/xml' } => '{"NCIPMessage":{}}' );
     is( $tx->res->code, 200, 'a JSON body sent as application/xml still gets a 200' );
     like( $tx->res->body, qr/It works!/, 'a JSON body sent as application/xml gets the NCIP envelope' );
+};
+
+subtest 'unsupported message type' => sub {
+    plan tests => 2;
+
+    # There is no CreateUser handler, so the Handler whitelist dies and the
+    # controller answers with the "It works!" envelope instead
+    my $createuser = NCIPTest::render_fixture('v2/CreateUser.xml');
+
+    my $tx = $t->ua->post( '/api/v1/contrib/ncip_server/ncip' => $createuser );
+    is( $tx->res->code, 200, 'an unsupported message type still gets a 200' );
+    like( $tx->res->body, qr/It works!/, 'an unsupported message type gets the NCIP envelope' );
 };
 
 $schema->storage->txn_rollback;

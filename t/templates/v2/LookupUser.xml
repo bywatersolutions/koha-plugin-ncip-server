@@ -15,6 +15,13 @@
       <AuthenticationDataFormatType>Text</AuthenticationDataFormatType>
       <AuthenticationInputType>Barcode Id</AuthenticationInputType>
     </AuthenticationInput>
+[%- IF user_password %]
+    <AuthenticationInput>
+      <AuthenticationInputData>[% user_password %]</AuthenticationInputData>
+      <AuthenticationDataFormatType>Text</AuthenticationDataFormatType>
+      <AuthenticationInputType>PIN</AuthenticationInputType>
+    </AuthenticationInput>
+[%- END %]
     <UserElementType>User Address Information</UserElementType>
     <UserElementType>Block Or Trap</UserElementType>
     <UserElementType>Name Information</UserElementType>
