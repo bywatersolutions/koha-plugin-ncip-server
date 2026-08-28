@@ -52,6 +52,10 @@ POST /api/v1/contrib/ncip_server/ncip/{auth_token}
 The NCIP XML can be sent as the raw request body, or as a form field named
 `xml` or `XForms:Model` (for older clients).
 
+A GET request to the same URLs returns an empty NCIP envelope containing
+`It works!`, like the standalone server did, which is handy for checking from a
+browser that the endpoint is up.
+
 Notes:
 
 - Do not add query string parameters to the URL. Koha's REST API rejects

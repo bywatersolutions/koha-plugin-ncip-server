@@ -5,7 +5,7 @@ use Modern::Perl;
 use FindBin qw($Bin);
 use lib ( "$Bin/lib", "$Bin/..", '/kohadevbox/koha' );
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::Mojo;
 
 use NCIPTest;
@@ -37,6 +37,9 @@ NCIPTest::set_config( $plugin, { koha => \%koha_config } );
 my $t = Test::Mojo->new('Koha::REST::V1');
 
 my $dom;
+
+my $tx = $t->ua->get('/api/v1/contrib/ncip_server/ncip');
+is( $tx->res->code, 200, "GET / is found" );
 
 $dom = NCIPTest::post_ncip($t);
 is(
