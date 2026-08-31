@@ -126,6 +126,7 @@ automatically when the plugin is installed, and the preferences are deleted.
 | `trap_hold_on_checkin` | 0 | CheckInItem | Trap the hold at checkin time instead. Implies `no_error_on_return_without_checkout`. |
 | `itemtype_map` | none | AcceptItem | Map of `ItemOptionalFields/Format` values to Koha itemtypes. |
 | `replacement_price` | none | AcceptItem | Replacement price for created items. |
+| `accept_item_marc_modification_template` | none | AcceptItem | Apply the Koha MARC modification template with this name to created records. If no template with that name exists, a warning is logged and the record is left unmodified. |
 | `item_callnumber` | none | AcceptItem | Callnumber used when the message has no `ItemDescription/CallNumber`. |
 | `item_itemtype` | none | AcceptItem | Fallback itemtype for created items. |
 | `item_ccode` | none | AcceptItem | Collection code for created items. |

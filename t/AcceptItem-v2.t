@@ -5,12 +5,13 @@ use Modern::Perl;
 use FindBin qw($Bin);
 use lib ( "$Bin/lib", "$Bin/..", '/kohadevbox/koha' );
 
-use Test::More tests => 13;
+use Test::More tests => 14;
 use Test::Mojo;
 
 use NCIPTest;
 
 # From Koha
+use C4::MarcModificationTemplates qw{ AddModificationTemplate AddModificationTemplateAction };
 use Koha::Database;
 use Koha::Holds;
 use Koha::Libraries;
@@ -692,6 +693,62 @@ subtest 'Test AcceptItem with unknown user' => sub {
 	'NCIP_NO_SUCH_USER',
 	'AcceptItemResponse gives correct problem value for an unknown user',
     );
+};
+
+subtest 'Test AcceptItem with accept_item_marc_modification_template set' => sub {
+    plan tests => 3;
+
+    $koha_config{framework} = 'FA';
+    $koha_config{replacement_price} = undef;
+    $koha_config{barcode_prefix} = undef;
+    $koha_config{item_branchcode} = undef;
+    $koha_config{always_generate_barcode} = undef;
+    $koha_config{deny_duplicate_barcodes} = undef;
+    $koha_config{request_identifier_value_as_barcode} = undef;
+    $koha_config{accept_item_title_prefix} = undef;
+    $koha_config{itemtype_map} = undef;
+    $koha_config{trap_hold_on_accept_item} = undef;
+    $koha_config{item_callnumber} = undef;
+    $koha_config{item_itemtype} = undef;
+    $koha_config{item_ccode} = undef;
+    $koha_config{item_location} = undef;
+    $koha_config{accept_item_marc_modification_template} = 'NCIP AcceptItem';
+    NCIPTest::set_config( $plugin, { koha => \%koha_config } );
+
+    my $template_id = AddModificationTemplate('NCIP AcceptItem');
+    AddModificationTemplateAction(
+        $template_id, 'copy_and_replace_field', 0,
+        '245',        'a',                      '', '245', 'a',
+        'Precision',  'PRECISION',              '',
+        '',           '',                       '', '', '', '',
+        'Copy and replace field 245$a using RegEx s/Precision/PRECISION/'
+    );
+
+    my $ncip_message = NCIPTest::render_fixture(
+        'v2/AcceptItem.xml',
+        {
+            patron_cardnumber => $patron_1->cardnumber,
+            pickup_location   => $library_2->id,
+            item_barcode      => 'NCIPMARCMOD1',
+        }
+    );
+
+    $dom = NCIPTest::post_ncip( $t, $ncip_message );
+
+    my $item_barcode = $dom->{NCIPMessage}->{AcceptItemResponse}->{ItemId}->{ItemIdentifierValue}->{text};
+    ok(
+        $item_barcode,
+        'AcceptItemResponse gives an ItemIdentifierValue'
+    );
+
+    my $item = Koha::Items->find({ barcode => $item_barcode });
+    is( ref($item), 'Koha::Item', 'Found item with corrosponding item barcode' );
+
+    is( $item->biblio->title, 'PRECISION framing', 'Title was modified by the MARC modification template' );
+
+    # Reset accept_item_marc_modification_template
+    $koha_config{accept_item_marc_modification_template} = undef;
+    NCIPTest::set_config( $plugin, { koha => \%koha_config } );
 };
 
 subtest 'Test AcceptItem with MediumType' => sub {
