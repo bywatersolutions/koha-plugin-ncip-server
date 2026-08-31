@@ -66,11 +66,17 @@ Notes:
   API (Bug 37762) before the plugin sees it, which breaks the message. Have
   clients send `text/xml`, or normalize the header in Apache (see below).
 
-### Keeping the old /ncip URLs working
+### Mapping /ncip to the API endpoint
 
 Deployments migrating from the standalone server can keep their partners'
-existing URLs by adding a mapping to the Apache vhost that serves Koha's API
-(usually the OPAC vhost):
+existing `/ncip` URLs by mapping them onto the plugin's API endpoint in
+Apache, so nothing has to change on the ILL broker's side.
+
+Add the mapping to the vhost that currently serves the `/ncip` traffic,
+usually the OPAC vhost, which also serves `/api`. With Debian package
+installs that is the instance's OPAC `<VirtualHost>` block in
+`/etc/apache2/sites-available/<instance>.conf`, or an included file such as
+`/etc/koha/apache-shared-opac.conf` if you want it for every instance:
 
 ```apache
 RewriteEngine on
@@ -81,6 +87,31 @@ RewriteRule ^/ncip/(.+)$ /api/v1/contrib/ncip_server/ncip/$1   [PT,L]
 <LocationMatch "^/ncip">
     RequestHeader set Content-Type "text/xml"
 </LocationMatch>
+```
+
+The second rewrite rule carries the auth token through, so a partner
+posting to `/ncip/sekrit` reaches `/api/v1/contrib/ncip_server/ncip/sekrit`.
+The `PT` flag hands the rewritten path back to Apache so it flows into the
+same Plack backend as any other `/api` request. The directives need
+`mod_rewrite` and `mod_headers`:
+
+```
+a2enmod rewrite headers
+apachectl configtest && systemctl reload apache2
+```
+
+If a separate proxy or load balancer sits in front of Koha, a plain proxy
+rule there works too, for example:
+
+```apache
+ProxyPass /ncip https://koha.example.org/api/v1/contrib/ncip_server/ncip
+```
+
+Verify the mapping with a browser or curl, a GET returns the `It works!`
+envelope:
+
+```
+curl https://opac.example.org/ncip
 ```
 
 ## Configuration
