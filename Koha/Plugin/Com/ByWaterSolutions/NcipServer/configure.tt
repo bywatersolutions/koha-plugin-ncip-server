@@ -43,6 +43,7 @@
         [% FOREACH error IN errors %]
             <div class="dialog error">
                 [% SWITCH error.code %]
+                [% CASE 'CONFIGURATION_NOT_SAVED' %]<span>The configuration was not saved, it is not valid YAML. The previously saved configuration is still in effect.</span>
                 [% CASE 'CONFIGURATION_INVALID' %]<span>The configuration is not valid YAML and could not be loaded</span>
                 [% CASE 'CONFIG_SCHEMA' %]<span>Configuration problem: [% error.error | html %]</span>
                 [% CASE 'AUTH_TOKEN_MISSING' %]<span>The configuration sets 'token_required' but no 'auth_token' is set</span>

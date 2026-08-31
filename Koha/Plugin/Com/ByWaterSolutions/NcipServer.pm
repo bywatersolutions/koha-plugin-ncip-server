@@ -134,20 +134,38 @@ sub configure {
 
     my $template = $self->get_template( { file => 'configure.tt' } );
 
+    my @errors;
+    my $configuration;
+
     if ( scalar $cgi->param('op') && scalar $cgi->param('op') eq 'cud-save' ) {
 
-        $self->store_data(
-            {
-                configuration => scalar $cgi->param('configuration'),
-            }
-        );
+        $configuration = scalar $cgi->param('configuration');
+
+        # Refuse to store configuration that is not valid YAML, the NCIP
+        # endpoint would return errors until it is fixed
+        my $parse_error;
+        if ( defined $configuration && length $configuration ) {
+            eval { YAML::XS::Load( Encode::encode_utf8($configuration) ) };
+            $parse_error = $@;
+        }
+
+        if ($parse_error) {
+
+            # Show the submitted text below so the edit is not lost, the
+            # previously stored configuration remains in effect
+            push @errors, { code => 'CONFIGURATION_NOT_SAVED' };
+        }
+        else {
+            $self->store_data( { configuration => $configuration } );
+            $configuration = undef;
+        }
     }
 
-    my $errors = $self->check_configuration;
+    push @errors, @{ $self->check_configuration };
 
     $template->param(
-        errors        => $errors,
-        configuration => $self->retrieve_data('configuration'),
+        errors        => \@errors,
+        configuration => $configuration // $self->retrieve_data('configuration'),
     );
 
     $self->output_html( $template->output() );
