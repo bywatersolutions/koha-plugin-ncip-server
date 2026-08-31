@@ -127,6 +127,7 @@ automatically when the plugin is installed, and the preferences are deleted.
 | `itemtype_map` | none | AcceptItem | Map of `ItemOptionalFields/Format` values to Koha itemtypes. |
 | `replacement_price` | none | AcceptItem | Replacement price for created items. |
 | `accept_item_marc_modification_template` | none | AcceptItem | Apply the Koha MARC modification template with this name to created records. If no template with that name exists, a warning is logged and the record is left unmodified. |
+| `accept_item_uppercase_fields` | none | AcceptItem | List of fields to convert to upper case on created records. Entries are Koha database columns (e.g. `biblio.title`, resolved via the Koha to MARC mapping) or MARC field$subfield pairs (e.g. `100$a`). `items.*` columns are upper cased on the created item itself. |
 | `item_callnumber` | none | AcceptItem | Callnumber used when the message has no `ItemDescription/CallNumber`. |
 | `item_itemtype` | none | AcceptItem | Fallback itemtype for created items. |
 | `item_ccode` | none | AcceptItem | Collection code for created items. |

@@ -5,7 +5,7 @@ use Modern::Perl;
 use FindBin qw($Bin);
 use lib ( "$Bin/lib", "$Bin/..", '/kohadevbox/koha' );
 
-use Test::More tests => 14;
+use Test::More tests => 15;
 use Test::Mojo;
 
 use NCIPTest;
@@ -748,6 +748,59 @@ subtest 'Test AcceptItem with accept_item_marc_modification_template set' => sub
 
     # Reset accept_item_marc_modification_template
     $koha_config{accept_item_marc_modification_template} = undef;
+    NCIPTest::set_config( $plugin, { koha => \%koha_config } );
+};
+
+subtest 'Test AcceptItem with accept_item_uppercase_fields set' => sub {
+    plan tests => 5;
+
+    $koha_config{framework} = 'FA';
+    $koha_config{replacement_price} = undef;
+    $koha_config{barcode_prefix} = undef;
+    $koha_config{item_branchcode} = undef;
+    $koha_config{always_generate_barcode} = undef;
+    $koha_config{deny_duplicate_barcodes} = undef;
+    $koha_config{request_identifier_value_as_barcode} = undef;
+    $koha_config{accept_item_title_prefix} = undef;
+    $koha_config{itemtype_map} = undef;
+    $koha_config{trap_hold_on_accept_item} = undef;
+    $koha_config{item_callnumber} = undef;
+    $koha_config{item_itemtype} = undef;
+    $koha_config{item_ccode} = undef;
+    $koha_config{item_location} = undef;
+    $koha_config{accept_item_marc_modification_template} = undef;
+    $koha_config{accept_item_uppercase_fields} = [ 'biblio.title', '100$a', 'items.itemcallnumber' ];
+    NCIPTest::set_config( $plugin, { koha => \%koha_config } );
+
+    my $ncip_message = NCIPTest::render_fixture(
+        'v2/AcceptItem.xml',
+        {
+            patron_cardnumber => $patron_1->cardnumber,
+            pickup_location   => $library_2->id,
+            item_barcode      => 'NCIPUPPER1',
+            item_callnumber   => 'ill fic 694.2',
+        }
+    );
+
+    $dom = NCIPTest::post_ncip( $t, $ncip_message );
+
+    my $item_barcode = $dom->{NCIPMessage}->{AcceptItemResponse}->{ItemId}->{ItemIdentifierValue}->{text};
+    ok(
+        $item_barcode,
+        'AcceptItemResponse gives an ItemIdentifierValue'
+    );
+
+    my $item = Koha::Items->find({ barcode => $item_barcode });
+    is( ref($item), 'Koha::Item', 'Found item with corrosponding item barcode' );
+
+    my $b = $item->biblio;
+    is( $b->title, 'PRECISION FRAMING', 'Title was upper cased via the biblio.title mapping' );
+    is( $b->author, 'GUERTIN, MIKE.', 'Author was upper cased via the 100$a entry' );
+
+    is( $item->itemcallnumber, 'ILL FIC 694.2', 'Item callnumber was upper cased via the items.itemcallnumber entry' );
+
+    # Reset accept_item_uppercase_fields
+    $koha_config{accept_item_uppercase_fields} = undef;
     NCIPTest::set_config( $plugin, { koha => \%koha_config } );
 };
 

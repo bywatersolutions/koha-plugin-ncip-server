@@ -37,7 +37,7 @@
       </BibliographicDescription>
 [% UNLESS omit_item_description -%]
       <ItemDescription>
-        <CallNumber>694.2 .G84 2001</CallNumber>
+        <CallNumber>[% item_callnumber || '694.2 .G84 2001' %]</CallNumber>
       </ItemDescription>
 [% END -%]
     </ItemOptionalFields>
