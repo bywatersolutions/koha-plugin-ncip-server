@@ -355,7 +355,7 @@ subtest 'LookupUser: Test unknown user problem response' => sub {
     $dom = NCIPTest::post_ncip( $t, $lookupuser_unknown );
     is(
         $dom->{NCIPMessage}->{LookupUserResponse}->{Problem}->{ProblemType}->{text},
-        'Unkown User',
+        'Unknown User',
         'LookupUserResponse has correct problem type for an unknown user'
     );
     is(
