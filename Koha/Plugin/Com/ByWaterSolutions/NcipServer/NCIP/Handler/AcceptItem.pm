@@ -31,129 +31,57 @@ sub handle {
         my ( $itemid, $action, $request, $request_agency, $request_id,
             $user_id, $item_info );
 
-        my ( $bibliographic, $author, $date, $publisher, $medium );
         my $itemdata = {};
 
-        if ( $self->{ncip_version} == 1 ) {
-            $itemid = $xpc->find( '//ItemIdentifierValue', $root );
-            $itemid = $xpc->find( '//RequestIdentifierValue', $root ) if $config->{request_identifier_value_as_barcode};
+        $itemid = $self->find_nodes( '//ItemIdentifierValue', $root );
+        $itemid = $self->find_nodes( '//RequestIdentifierValue', $root ) if $config->{request_identifier_value_as_barcode};
 
-            ($action) = $xpc->find( '//RequestedActionType//Value', $root );
+        $action = $self->text_of( '//RequestedActionType', $root );
+
+        # The request agency and request id live in different structures
+        # in the two protocol versions
+        if ( $self->{ncip_version} == 1 ) {
             $request_agency =
               $xpc->find( '//FromAgencyId/UniqueAgencyId/Value', $root );
             $request_id = $xpc->find( '//RequestIdentifierValue', $root );
-            $user_id    = $xpc->find( '//UserIdentifierValue',    $root );
-
-            $item_info = $xpc->find( '//ItemOptionalFields', $root );
-
-            if ( $item_info->[0] ) {
-                my $bibliographic =
-                  $xpc->find( '//BibliographicDescription', $item_info->[0] );
-                my $title = $xpc->find( '//Title', $bibliographic->[0] );
-                if ( $title->[0] ) {
-                    $itemdata->{title} = $title->[0]->textContent();
-                }
-                my $author = $xpc->find( '//Author', $bibliographic->[0] );
-                if ( $author->[0] ) {
-                    $itemdata->{author} = $author->[0]->textContent();
-                }
-                my $date =
-                  $xpc->find( '//PublicationDate', $bibliographic->[0] );
-                if ( $date->[0] ) {
-                    $itemdata->{publicationdate} = $date->[0]->textContent();
-                }
-                my $publisher =
-                  $xpc->find( '//Publisher', $bibliographic->[0] );
-                if ( $publisher->[0] ) {
-                    $itemdata->{publisher} = $publisher->[0]->textContent();
-                }
-                my $medium = $xpc->find( '//MediumType', $bibliographic->[0] );
-                if ( $medium->[0] ) {
-
-                    # MediumType may be a scheme/value pair or a simple value
-                    my $medium_value = $xpc->find( 'Value', $medium->[0] );
-                    $itemdata->{mediumtype} =
-                        $medium_value->[0] ? $medium_value->[0]->textContent() : $medium->[0]->textContent();
-                }
-                my $format = $xpc->find( '//Format', $bibliographic->[0] );
-                if ( $format->[0] ) {
-                    my $f = $format->[0]->textContent();
-                    my $itemtype = $config->{itemtype_map}->{$f};
-                    $itemdata->{itemtype} = $itemtype if $itemtype;
-                }
-
-                my $item_description =
-                  $xpc->find( '//ItemDescription', $item_info->[0] );
-                if ($item_description) {
-                    my $itemcallnumber = $xpc->find( '//CallNumber', $item_description->[0] );
-                    if ( $itemcallnumber->[0] ) {
-                        $itemdata->{itemcallnumber} = $itemcallnumber->[0]->textContent();
-                    }
-                }
-            }
-
-            # accept the item
         }
-        else {    # $version == 2
-            $itemid = $xpc->find( '//ns:ItemIdentifierValue', $root );
-            $itemid = $xpc->find( '//ns:RequestIdentifierValue', $root ) if $config->{request_identifier_value_as_barcode};
-
-            ($action)  = $xpc->findnodes( '//ns:RequestedActionType', $root );
-            ($request) = $xpc->findnodes( '//ns:RequestId',           $root );
+        else {
+            ($request) = $xpc->findnodes( '//ns:RequestId', $root );
             $request_agency = $xpc->find( 'ns:AgencyId', $request );
             $request_id = $xpc->find( '//ns:RequestIdentifierValue', $request );
-            $user_id    = $xpc->find( '//ns:UserIdentifierValue',    $root );
+        }
 
-            if ($action) {
-                $action = $action->textContent();
+        $user_id   = $self->find_nodes( '//UserIdentifierValue', $root );
+        $item_info = $self->find_nodes( '//ItemOptionalFields',  $root );
+
+        if ( $item_info->[0] ) {
+            my $bibliographic = $self->find_nodes( '//BibliographicDescription', $item_info->[0] );
+
+            my $title = $self->text_of( '//Title', $bibliographic->[0] );
+            $itemdata->{title} = $title if defined $title;
+
+            my $author = $self->text_of( '//Author', $bibliographic->[0] );
+            $itemdata->{author} = $author if defined $author;
+
+            my $date = $self->text_of( '//PublicationDate', $bibliographic->[0] );
+            $itemdata->{publicationdate} = $date if defined $date;
+
+            my $publisher = $self->text_of( '//Publisher', $bibliographic->[0] );
+            $itemdata->{publisher} = $publisher if defined $publisher;
+
+            my $medium = $self->text_of( '//MediumType', $bibliographic->[0] );
+            $itemdata->{mediumtype} = $medium if defined $medium;
+
+            my $format = $self->text_of( '//Format', $bibliographic->[0] );
+            if ( defined $format ) {
+                my $itemtype = $config->{itemtype_map}->{$format};
+                $itemdata->{itemtype} = $itemtype if $itemtype;
             }
 
-            $item_info = $xpc->find( '//ns:ItemOptionalFields', $root );
-
-            if ( $item_info->[0] ) {
-                my $bibliographic =
-                  $xpc->find( '//ns:BibliographicDescription', $item_info->[0] );
-                my $title = $xpc->find( '//ns:Title', $bibliographic->[0] );
-                if ( $title->[0] ) {
-                    $itemdata->{title} = $title->[0]->textContent();
-                }
-                my $author = $xpc->find( '//ns:Author', $bibliographic->[0] );
-                if ( $author->[0] ) {
-                    $itemdata->{author} = $author->[0]->textContent();
-                }
-                my $date =
-                  $xpc->find( '//ns:PublicationDate', $bibliographic->[0] );
-                if ( $date->[0] ) {
-                    $itemdata->{publicationdate} = $date->[0]->textContent();
-                }
-                my $publisher =
-                  $xpc->find( '//ns:Publisher', $bibliographic->[0] );
-                if ( $publisher->[0] ) {
-                    $itemdata->{publisher} = $publisher->[0]->textContent();
-                }
-                my $medium = $xpc->find( '//ns:MediumType', $bibliographic->[0] );
-                if ( $medium->[0] ) {
-
-                    # MediumType may be a scheme/value pair or a simple value
-                    my $medium_value = $xpc->find( 'ns:Value', $medium->[0] );
-                    $itemdata->{mediumtype} =
-                        $medium_value->[0] ? $medium_value->[0]->textContent() : $medium->[0]->textContent();
-                }
-                my $format = $xpc->find( '//ns:Format', $bibliographic->[0] );
-                if ( $format->[0] ) {
-                    my $f = $format->[0]->textContent();
-                    my $itemtype = $config->{itemtype_map}->{$f};
-                    $itemdata->{itemtype} = $itemtype if $itemtype;
-                }
-
-                my $item_description =
-                  $xpc->find( '//ns:ItemDescription', $item_info->[0] );
-                if ( $item_description ) {
-                    my $itemcallnumber = $xpc->find( '//ns:CallNumber', $item_description->[0] );
-                    if ( $itemcallnumber->[0] ) {
-                        $itemdata->{itemcallnumber} = $itemcallnumber->[0]->textContent();
-                    }
-                }
+            my $item_description = $self->find_nodes( '//ItemDescription', $item_info->[0] );
+            if ($item_description) {
+                my $itemcallnumber = $self->text_of( '//CallNumber', $item_description->[0] );
+                $itemdata->{itemcallnumber} = $itemcallnumber if defined $itemcallnumber;
             }
         }
 
@@ -168,7 +96,7 @@ sub handle {
         my $create = 1;    # Same for Relais and Clio, just always create for now
 
         my $pickup_location;
-        $pickup_location ||= $xpc->find( '//ns:PickupLocation', $root );
+        $pickup_location ||= $self->find_nodes( '//PickupLocation', $root );
         $pickup_location ||= $to->[0]->textContent() if $to && $to->[0];
 
         my $data =

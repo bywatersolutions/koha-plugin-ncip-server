@@ -40,3 +40,6 @@ inc/
 node_modules/
 *.kpz
 dist/
+
+# Editor swap files
+*.swp

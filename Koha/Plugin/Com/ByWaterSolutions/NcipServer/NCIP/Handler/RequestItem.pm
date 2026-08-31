@@ -24,46 +24,23 @@ sub handle {
     my $xmldoc = shift;
     if ($xmldoc) {
         my $root = $xmldoc->documentElement();
-        my $xpc  = XML::LibXML::XPathContext->new;
-        $xpc->registerNs( 'ns', $self->namespace() );
 
-        my $userid;
-        my $itemid;
         my $branchcode;
-        my $identifier;
-        my $bib_item_id_code;
 
-        if ( $self->{ncip_version} == 1 ) {
-            ($userid) = $xpc->findnodes( '//UserIdentifierValue', $root );
-            $userid = $userid->textContent() if $userid;
+        my ($userid) = $self->find_nodes( '//UserIdentifierValue', $root )->get_nodelist;
+        $userid = $userid->textContent() if $userid;
 
-            ($itemid) = $xpc->findnodes( '//ItemIdentifierValue', $root );
-            $itemid = $itemid->textContent() if $itemid;
+        my ($itemid) = $self->find_nodes( '//ItemIdentifierValue', $root )->get_nodelist;
+        $itemid = $itemid->textContent() if $itemid;
 
-            ($identifier) = $xpc->findnodes( '//BibliographicRecordIdentifier', $root );
-            $identifier = $identifier->textContent() if $identifier;
+        my ($identifier) = $self->find_nodes( '//BibliographicRecordIdentifier', $root )->get_nodelist;
+        $identifier = $identifier->textContent() if $identifier;
 
-            $bib_item_id_code = $xpc->findnodes( '//BibliographicItemIdentifierCode', $root );
-            if ( $bib_item_id_code eq 'ISBN' ) {
-                ($identifier) = $xpc->findnodes( '//BibliographicItemIdentifier', $root );
-                $identifier = $identifier->textContent();
-            };
-        } else {
-            ($userid) = $xpc->findnodes( '//ns:UserIdentifierValue', $root );
-            $userid = $userid->textContent() if $userid;
-
-            ($itemid) = $xpc->findnodes( '//ns:ItemIdentifierValue', $root );
-            $itemid = $itemid->textContent() if $itemid;
-
-            ($identifier) = $xpc->findnodes( '//ns:BibliographicRecordIdentifier', $root );
-            $identifier = $identifier->textContent() if $identifier;
-
-            $bib_item_id_code = $xpc->findnodes( '//ns:BibliographicItemIdentifierCode', $root );
-            if ( $bib_item_id_code eq 'ISBN' ) {
-                ($identifier) = $xpc->findnodes( '//ns:BibliographicItemIdentifier', $root );
-                $identifier = $identifier->textContent();
-            };
-        }
+        my $bib_item_id_code = $self->find_nodes( '//BibliographicItemIdentifierCode', $root );
+        if ( $bib_item_id_code eq 'ISBN' ) {
+            ($identifier) = $self->find_nodes( '//BibliographicItemIdentifier', $root )->get_nodelist;
+            $identifier = $identifier->textContent();
+        };
 
         my $type = $bib_item_id_code || 'SYSNUMBER';
 

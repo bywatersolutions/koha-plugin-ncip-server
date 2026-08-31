@@ -24,16 +24,10 @@ sub handle {
     my $xmldoc = shift;
     if ($xmldoc) {
         my $root   = $xmldoc->documentElement();
-        my $xpc    = $self->xpc();
 
         my $config = $self->{config}->{koha};
 
-        my $itemid;
-        if ( $self->{ncip_version} == 1 ) {
-            $itemid = $xpc->findnodes( '//ItemIdentifierValue', $root );
-        } else {
-            $itemid = $xpc->findnodes( '//ns:ItemIdentifierValue', $root );
-        }
+        my $itemid = $self->find_nodes( '//ItemIdentifierValue', $root );
 
         # check in the item
         my $branch = undef;    # where the hell do we get this from???

@@ -131,6 +131,48 @@ sub ils { $_[0]->{ils} }
 
 sub templates { $_[0]->{templates} }
 
+=head2 find_nodes
+
+    my $nodes = $self->find_nodes( '//ItemId/ItemIdentifierValue', $context );
+
+    Version-aware XPath lookup. Takes an unprefixed path, for NCIP version 2
+    every element step is given the 'ns' namespace prefix, for version 1
+    ( which has no namespace ) the path is used as is. Returns whatever
+    XPathContext find() returns, a NodeList in scalar context.
+
+=cut
+
+sub find_nodes {
+    my ( $self, $path, $context ) = @_;
+
+    if ( $self->{ncip_version} != 1 ) {
+        $path =~ s{(?<=/)(?=\w)}{ns:}g;
+        $path =~ s{^(?=\w)}{ns:};
+    }
+
+    return $self->xpc->find( $path, $context );
+}
+
+=head2 text_of
+
+    my $text = $self->text_of( '//MediumType', $context );
+
+    Text content of the first node matching the version-aware path, or undef
+    if there is no match. Prefers the text of a Value child when one exists,
+    so scheme/value pairs and simple values both give back the plain value.
+
+=cut
+
+sub text_of {
+    my ( $self, $path, $context ) = @_;
+
+    my ($node) = $self->find_nodes( $path, $context )->get_nodelist;
+    return unless $node;
+
+    my ($value) = $self->find_nodes( 'Value', $node )->get_nodelist;
+    return $value ? $value->textContent() : $node->textContent();
+}
+
 =head2 xpc()
 
     Give back an XPathContext Object, registered to the correct namespace

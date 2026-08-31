@@ -27,21 +27,10 @@ sub handle {
 
     if ($xmldoc) {
         my $root = $xmldoc->documentElement();
-        my $xpc  = $self->xpc();
 
-        my $userid;
-        my $itemid;
-        my $date_due;
-
-        if ( $self->{ncip_version} == 1 ) {
-            $userid   = $xpc->findnodes( '//UserIdentifierValue', $root );
-            $itemid   = $xpc->findnodes( '//ItemIdentifierValue', $root );
-            $date_due = $xpc->findnodes( '//DesiredDateDue',      $root );
-        } else { # $self->{ncip_version} == 2
-            $userid   = $xpc->findnodes( '//ns:UserIdentifierValue', $root );
-            $itemid   = $xpc->findnodes( '//ns:ItemIdentifierValue', $root );
-            $date_due = $xpc->findnodes( '//ns:DesiredDateDue',      $root );
-        }
+        my $userid   = $self->find_nodes( '//UserIdentifierValue', $root );
+        my $itemid   = $self->find_nodes( '//ItemIdentifierValue', $root );
+        my $date_due = $self->find_nodes( '//DesiredDateDue',      $root );
 
         # checkout the item
         my $data = $self->ils->checkout( $userid, $itemid, $date_due, $config );
