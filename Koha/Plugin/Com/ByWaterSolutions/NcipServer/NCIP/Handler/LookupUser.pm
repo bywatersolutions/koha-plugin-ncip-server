@@ -33,8 +33,6 @@ sub handle {
         # Given our xml document, lets find our userid
         my $user_id = $self->find_nodes( '//UserIdentifierValue', $root );
 
-        warn "FOUND USER ID ELEMENT: $user_id";
-
         my $pin;
         unless ($user_id) {
 
@@ -69,7 +67,6 @@ sub handle {
             }
 
             $user_id = $barcode;
-            warn "FOUND USER ID: $user_id";
         }
 
         # We may get a password, username combo instead of userid
