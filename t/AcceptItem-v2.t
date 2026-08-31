@@ -5,7 +5,7 @@ use Modern::Perl;
 use FindBin qw($Bin);
 use lib ( "$Bin/lib", "$Bin/..", '/kohadevbox/koha' );
 
-use Test::More tests => 12;
+use Test::More tests => 13;
 use Test::Mojo;
 
 use NCIPTest;
@@ -692,6 +692,80 @@ subtest 'Test AcceptItem with unknown user' => sub {
 	'NCIP_NO_SUCH_USER',
 	'AcceptItemResponse gives correct problem value for an unknown user',
     );
+};
+
+subtest 'Test AcceptItem with MediumType' => sub {
+    plan tests => 4;
+
+    $koha_config{framework} = 'FA';
+    $koha_config{replacement_price} = undef;
+    $koha_config{barcode_prefix} = undef;
+    $koha_config{item_branchcode} = undef;
+    $koha_config{always_generate_barcode} = undef;
+    $koha_config{deny_duplicate_barcodes} = undef;
+    $koha_config{request_identifier_value_as_barcode} = undef;
+    $koha_config{accept_item_title_prefix} = undef;
+    $koha_config{itemtype_map} = undef;
+    $koha_config{trap_hold_on_accept_item} = undef;
+    $koha_config{item_callnumber} = undef;
+    $koha_config{item_itemtype} = undef;
+    $koha_config{item_ccode} = undef;
+    $koha_config{item_location} = undef;
+    NCIPTest::set_config( $plugin, { koha => \%koha_config } );
+
+    # With no itemtype configured, the MediumType value lands in 942$c
+    my $ncip_message = NCIPTest::render_fixture(
+        'v2/AcceptItem.xml',
+        {
+            patron_cardnumber => $patron_1->cardnumber,
+            pickup_location   => $library_2->id,
+            item_barcode      => 'NCIPMEDIUM1',
+        }
+    );
+
+    $dom = NCIPTest::post_ncip( $t, $ncip_message );
+
+    my $item = Koha::Items->find( { barcode => 'NCIPMEDIUM1' } );
+    is( ref($item), 'Koha::Item', 'Found item with corrosponding item barcode' );
+
+    my @medium_itemtypes = grep { defined $_ && length $_ } map { $_->subfield('c') }
+        $item->biblio->metadata->record->field('942');
+    is_deeply(
+        \@medium_itemtypes,
+        ['Book'], "The MediumType value is in the created record's 942\$c"
+    );
+
+    # With an itemtype configured, the itemtype wins over MediumType
+    my $itemtype = $builder->build_object( { class => 'Koha::ItemTypes' } );
+    $koha_config{itemtype_map} = { DVD => $itemtype->itemtype };
+    NCIPTest::set_config( $plugin, { koha => \%koha_config } );
+
+    $ncip_message = NCIPTest::render_fixture(
+        'v2/AcceptItem.xml',
+        {
+            patron_cardnumber => $patron_1->cardnumber,
+            pickup_location   => $library_2->id,
+            item_barcode      => 'NCIPMEDIUM2',
+            format            => 'DVD',
+        }
+    );
+
+    $dom = NCIPTest::post_ncip( $t, $ncip_message );
+
+    $item = Koha::Items->find( { barcode => 'NCIPMEDIUM2' } );
+    is( ref($item), 'Koha::Item', 'Found item with corrosponding item barcode' );
+
+    my @itemtypes = grep { defined $_ && length $_ } map { $_->subfield('c') }
+        $item->biblio->metadata->record->field('942');
+    is_deeply(
+        \@itemtypes,
+        [ $itemtype->itemtype ],
+        "The mapped itemtype is the only 942\$c on the created record, MediumType did not override it"
+    );
+
+    # Reset itemtype_map
+    $koha_config{itemtype_map} = undef;
+    NCIPTest::set_config( $plugin, { koha => \%koha_config } );
 };
 
 $schema->storage->txn_rollback;
