@@ -5,7 +5,7 @@ use Modern::Perl;
 use FindBin qw($Bin);
 use lib ( "$Bin/lib", "$Bin/..", '/kohadevbox/koha' );
 
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::NoWarnings;
 use Test::Warn;
 
@@ -92,6 +92,47 @@ subtest 'check_configuration() tests' => sub {
         [ { code => 'CONFIGURATION_INVALID' } ],
         'CONFIGURATION_INVALID when the configuration is not valid YAML'
     );
+};
+
+subtest 'check_configuration() schema validation tests' => sub {
+    plan tests => 6;
+
+    my $patron = $builder->build_object( { class => 'Koha::Patrons' } );
+    my %valid_koha_config = ( userenv_borrowernumber => $patron->borrowernumber );
+
+    # A misspelled key is flagged, misspelled keys otherwise silently do nothing
+    NCIPTest::set_config(
+        $plugin,
+        { koha => { %valid_koha_config, lookup_userid => 'cardnumber' } }
+    );
+    my @schema_errors = grep { $_->{code} eq 'CONFIG_SCHEMA' } @{ $plugin->check_configuration };
+    is( scalar @schema_errors, 1, 'A misspelled koha key gives one schema error' );
+    like( $schema_errors[0]->{error}, qr/lookup_userid/, 'The schema error names the misspelled key' );
+
+    # A value outside the enum is flagged
+    NCIPTest::set_config(
+        $plugin,
+        { koha => { %valid_koha_config, lookup_user_id => 'carnumber' } }
+    );
+    @schema_errors = grep { $_->{code} eq 'CONFIG_SCHEMA' } @{ $plugin->check_configuration };
+    is( scalar @schema_errors, 1, 'A bad lookup_user_id value gives one schema error' );
+    like( $schema_errors[0]->{error}, qr{/koha/lookup_user_id}, 'The schema error points at lookup_user_id' );
+
+    # A value of the wrong shape is flagged
+    NCIPTest::set_config(
+        $plugin,
+        { koha => { %valid_koha_config, accept_item_uppercase_fields => 'biblio.title' } }
+    );
+    @schema_errors = grep { $_->{code} eq 'CONFIG_SCHEMA' } @{ $plugin->check_configuration };
+    is( scalar @schema_errors, 1, 'A scalar accept_item_uppercase_fields gives one schema error' );
+
+    # An unknown top level key is flagged, catches pasting a whole standalone config.yml
+    NCIPTest::set_config(
+        $plugin,
+        { views => '/path/to/templates', koha => \%valid_koha_config }
+    );
+    @schema_errors = grep { $_->{code} eq 'CONFIG_SCHEMA' } @{ $plugin->check_configuration };
+    is( scalar @schema_errors, 1, 'An unknown top level key gives one schema error' );
 };
 
 $schema->storage->txn_rollback;

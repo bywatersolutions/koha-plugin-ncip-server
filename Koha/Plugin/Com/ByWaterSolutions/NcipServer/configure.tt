@@ -44,6 +44,7 @@
             <div class="dialog error">
                 [% SWITCH error.code %]
                 [% CASE 'CONFIGURATION_INVALID' %]<span>The configuration is not valid YAML and could not be loaded</span>
+                [% CASE 'CONFIG_SCHEMA' %]<span>Configuration problem: [% error.error | html %]</span>
                 [% CASE 'AUTH_TOKEN_MISSING' %]<span>The configuration sets 'token_required' but no 'auth_token' is set</span>
                 [% CASE 'USERENV_NOT_SET' %]<span>The configuration does not set 'koha.userenv_borrowernumber'</span>
                 [% CASE 'USERENV_NOT_FOUND' %]<span>No patron found for 'koha.userenv_borrowernumber' ([% error.borrowernumber | html %])</span>

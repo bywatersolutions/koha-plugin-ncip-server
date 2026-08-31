@@ -20,6 +20,7 @@ use Modern::Perl;
 use base qw(Koha::Plugins::Base);
 
 use Encode;
+use JSON::Validator;
 use Mojo::JSON qw(decode_json);
 use Try::Tiny;
 use YAML::XS;
@@ -196,6 +197,15 @@ sub check_configuration {
 
     my $config = $self->configuration( { force => 1 } );
     return [ { code => 'CONFIGURATION_INVALID' } ] unless defined $config;
+
+    # Validate the configuration structure against the JSON schema. This
+    # catches misspelled keys, which otherwise silently do nothing, and
+    # values of the wrong shape. The errors are advisory, the configuration
+    # is stored either way.
+    my $validator = JSON::Validator->new;
+    $validator->coerce('booleans,numbers');
+    $validator->schema( decode_json( $self->mbf_read('config_schema.json') ) );
+    push @errors, map { { code => 'CONFIG_SCHEMA', error => "$_" } } $validator->validate($config);
 
     push @errors, { code => 'AUTH_TOKEN_MISSING' }
         if $config->{token_required} && !$config->{auth_token};

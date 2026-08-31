@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "definitions": {
+    "flag": {
+      "type": ["boolean", "integer", "string", "null"]
+    },
+    "optional_string": {
+      "type": ["string", "integer", "null"]
+    }
+  },
+  "properties": {
+    "token_required": { "$ref": "#/definitions/flag" },
+    "auth_token": { "$ref": "#/definitions/optional_string" },
+    "koha": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "userenv_borrowernumber": { "type": ["integer", "string", "null"] },
+        "framework": { "$ref": "#/definitions/optional_string" },
+        "item_branchcode": { "$ref": "#/definitions/optional_string" },
+        "always_generate_barcode": { "$ref": "#/definitions/flag" },
+        "barcode_prefix": { "$ref": "#/definitions/optional_string" },
+        "no_error_on_return_without_checkout": { "$ref": "#/definitions/flag" },
+        "trap_hold_on_accept_item": { "$ref": "#/definitions/flag" },
+        "trap_hold_on_checkin": { "$ref": "#/definitions/flag" },
+        "itemtype_map": {
+          "type": ["object", "null"],
+          "additionalProperties": { "type": "string" }
+        },
+        "replacement_price": { "type": ["number", "integer", "string", "null"] },
+        "item_callnumber": { "$ref": "#/definitions/optional_string" },
+        "item_itemtype": { "$ref": "#/definitions/optional_string" },
+        "item_ccode": { "$ref": "#/definitions/optional_string" },
+        "item_location": { "$ref": "#/definitions/optional_string" },
+        "do_not_include_user_identifier_primary_key": { "$ref": "#/definitions/flag" },
+        "user_id_lookup_field": { "$ref": "#/definitions/optional_string" },
+        "lookup_user_id": {
+          "enum": ["cardnumber", "userid", "borrowernumber", "same", null]
+        },
+        "request_identifier_value_as_barcode": { "$ref": "#/definitions/flag" },
+        "format_ValidToDate": { "$ref": "#/definitions/optional_string" },
+        "format_DateDue": { "$ref": "#/definitions/optional_string" },
+        "suppress_in_opac": { "$ref": "#/definitions/flag" },
+        "ignore_item_requests": { "$ref": "#/definitions/flag" },
+        "deny_duplicate_barcodes": { "$ref": "#/definitions/flag" },
+        "accept_item_title_prefix": { "$ref": "#/definitions/optional_string" },
+        "accept_item_marc_modification_template": { "$ref": "#/definitions/optional_string" },
+        "accept_item_uppercase_fields": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "string",
+            "pattern": "^\\w+\\.\\w+$|^[0-9]{3}\\$.$"
+          }
+        },
+        "delete_item_on_checkin": { "$ref": "#/definitions/flag" },
+        "delete_item_on_checkin_itemtype": { "$ref": "#/definitions/optional_string" },
+        "delete_item_on_checkin_homebranch": { "$ref": "#/definitions/optional_string" },
+        "delete_item_on_checkin_holdingbranch": { "$ref": "#/definitions/optional_string" }
+      }
+    }
+  }
+}

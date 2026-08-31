@@ -101,6 +101,14 @@ koha:
   trap_hold_on_accept_item: 1
 ```
 
+The configuration is validated against a JSON schema
+(`config_schema.json` in the plugin bundle) when the configuration page is
+loaded. Misspelled keys, values of the wrong shape, and unknown keys (such as
+pasting a whole standalone `config.yml` instead of just its `koha:` block)
+are reported on the page. The warnings are advisory, the configuration is
+saved either way. When adding a new configuration key to the plugin, add it
+to the schema too, or it will be flagged as unknown.
+
 ### Authentication
 
 | Key | Description |
