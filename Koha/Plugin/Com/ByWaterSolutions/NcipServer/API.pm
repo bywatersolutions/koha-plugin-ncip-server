@@ -19,6 +19,7 @@ use Modern::Perl;
 
 use Mojo::Base 'Mojolicious::Controller';
 
+use Mojo::JSON qw(decode_json);
 use Template;
 use Try::Tiny;
 use XML::LibXML;
@@ -66,13 +67,24 @@ sub ncip {
         my $xml = $c->param('xml') // $c->param('XForms:Model') // $c->req->body // q{};
 
         # Koha 26.05 and later ( Bug 37762 ) converts request bodies sent with
-        # an 'application/xml' content type to JSON before the controller runs,
-        # which destroys the NCIP message. Warn so the problem is findable, the
-        # fix is to have the client ( or Apache ) send 'text/xml' instead.
+        # an 'application/xml' content type to JSON before the controller
+        # runs, which destroys the NCIP message. Recover the original from
+        # the buffered PSGI input if the server kept it, otherwise rebuild
+        # workable XML from the JSON conversion
         my $content_type = $c->req->headers->content_type // q{};
         if ( $xml =~ /^\s*\{/ && $content_type =~ m{application/xml} ) {
-            $logger->warn( "NCIP: the request body was converted to JSON by Koha's REST API ( Bug 37762 ). "
-                    . "Have the client send a 'text/xml' content type, or normalize the Content-Type header in Apache." );
+            if ( my $raw = _recover_raw_body($c) ) {
+                $xml = $raw;
+                $logger->info("NCIP: recovered the original request body from the buffered PSGI input");
+            }
+            elsif ( my $rebuilt = _rebuild_xml_from_json($xml) ) {
+                $xml = $rebuilt;
+                $logger->info("NCIP: rebuilt the request from Koha's JSON conversion, NCIP version 2 assumed");
+            }
+            else {
+                $logger->warn( "NCIP: the request body was converted to JSON by Koha's REST API ( Bug 37762 ) "
+                        . "and could not be recovered" );
+            }
         }
 
         # Gets rid of DOCTYPE stanzas, our parser chokes on them
@@ -121,6 +133,102 @@ sub ncip {
     catch {
         $c->unhandled_exception($_);
     };
+}
+
+=head2 Internal methods
+
+=head3 _recover_raw_body
+
+Returns the original request body from the buffered PSGI input, or undef.
+
+=cut
+
+sub _recover_raw_body {
+    my ($c) = @_;
+
+    # Under PSGI servers that buffer the request body ( Koha's Starman
+    # deployment does ), the original bytes are still readable from the
+    # PSGI environment even after Koha replaced the Mojo request body
+    my $env = $c->req->can('env') ? $c->req->env : undef;
+    return unless ref($env) eq 'HASH';
+    return unless $env->{'psgix.input.buffered'};
+
+    my $input = $env->{'psgi.input'} or return;
+
+    my $raw;
+    eval {
+        my $position = tell($input);
+        if ( seek( $input, 0, 0 ) ) {
+            local $/;
+            $raw = <$input>;
+            seek( $input, $position, 0 ) if defined $position && $position >= 0;
+        }
+    };
+
+    return unless defined $raw && length $raw;
+    return $raw;
+}
+
+=head3 _rebuild_xml_from_json
+
+Rebuilds an NCIP XML message from Koha's JSON conversion of it, or undef.
+
+=cut
+
+sub _rebuild_xml_from_json {
+    my ($json) = @_;
+
+    my $data = eval { decode_json($json) };
+    return unless ref($data) eq 'HASH' && ref( $data->{NCIPMessage} ) eq 'HASH';
+
+    # The version attribute and element order were lost in the conversion,
+    # so NCIP version 2 is assumed. The handlers' XPath extraction does not
+    # depend on element order.
+    return
+          qq{<NCIPMessage xmlns="http://www.niso.org/2008/ncip" }
+        . qq{version="http://www.niso.org/schemas/ncip/v2_02/ncip_v2_02.xsd">}
+        . _hash_to_xml( $data->{NCIPMessage} )
+        . qq{</NCIPMessage>};
+}
+
+=head3 _hash_to_xml
+
+Serializes a nested hash from Koha's XML to JSON conversion back into XML.
+
+=cut
+
+sub _hash_to_xml {
+    my ($value) = @_;
+
+    if ( ref($value) eq 'HASH' ) {
+        my $xml = q{};
+        for my $key ( sort keys %$value ) {
+            my $child = $value->{$key};
+            if ( ref($child) eq 'ARRAY' ) {
+                $xml .= '<' . $key . '>' . _hash_to_xml($_) . '</' . $key . '>' for @$child;
+            }
+            else {
+                $xml .= '<' . $key . '>' . _hash_to_xml($child) . '</' . $key . '>';
+            }
+        }
+        return $xml;
+    }
+
+    return _xml_escape( $value // q{} );
+}
+
+=head3 _xml_escape
+
+=cut
+
+sub _xml_escape {
+    my ($text) = @_;
+
+    $text =~ s/&/&amp;/g;
+    $text =~ s/</&lt;/g;
+    $text =~ s/>/&gt;/g;
+
+    return $text;
 }
 
 1;

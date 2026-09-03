@@ -62,9 +62,14 @@ Notes:
   undeclared query parameters with a 400 error.
 - There is no `/health` endpoint. Monitor Koha itself instead.
 - On Koha 26.05 and later, a request sent with a `Content-Type:
-  application/xml` header will have its body converted to JSON by Koha's REST
-  API (Bug 37762) before the plugin sees it, which breaks the message. Have
-  clients send `text/xml`, or normalize the header in Apache (see below).
+  application/xml` header has its body converted to JSON by Koha's REST
+  API (Bug 37762) before the plugin sees it. The plugin recovers the
+  original message automatically, losslessly under Koha's standard Plack
+  deployment (the buffered PSGI input still holds the original bytes), or
+  by rebuilding the XML from the JSON conversion otherwise, in which case
+  NCIP version 2 is assumed. Only a version 1 client sending
+  `application/xml` to a deployment without a buffered PSGI input needs the
+  Apache header normalization below.
 
 ### Mapping /ncip to the API endpoint
 

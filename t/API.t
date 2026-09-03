@@ -5,7 +5,7 @@ use Modern::Perl;
 use FindBin qw($Bin);
 use lib ( "$Bin/lib", "$Bin/..", '/kohadevbox/koha' );
 
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Test::NoWarnings;
 use Test::Warn;
 use Test::Mojo;
@@ -90,6 +90,26 @@ subtest 'request body converted to JSON by Koha ( Bug 37762 )' => sub {
         '/api/v1/contrib/ncip_server/ncip' => { 'Content-Type' => 'application/xml' } => '{"NCIPMessage":{}}' );
     is( $tx->res->code, 200, 'a JSON body sent as application/xml still gets a 200' );
     like( $tx->res->body, qr/It works!/, 'a JSON body sent as application/xml gets the NCIP envelope' );
+};
+
+subtest 'NCIP message sent with an application/xml content type' => sub {
+    plan tests => 3;
+
+    # This must work on every Koha. Before 26.05 the body arrives untouched.
+    # On 26.05 and later ( Bug 37762 ) Koha converts the body to JSON before
+    # the controller runs, and the controller recovers it, from the buffered
+    # PSGI input in a real deployment, or by rebuilding the XML from the JSON
+    # conversion when there is no PSGI environment ( as here, in-process )
+    my $lookupversion = NCIPTest::render_fixture('v2/LookupVersion.xml');
+
+    my $tx = $t->ua->post(
+        '/api/v1/contrib/ncip_server/ncip' => { 'Content-Type' => 'application/xml' } => $lookupversion );
+    is( $tx->res->code, 200, 'NCIP posted as application/xml gets a 200' );
+    like(
+        $tx->res->body, qr/LookupVersionResponse/,
+        'NCIP posted as application/xml gets a real response, not the fallback envelope'
+    );
+    like( $tx->res->body, qr/VersionSupported/, 'The response lists the supported versions' );
 };
 
 subtest 'unsupported message type' => sub {
