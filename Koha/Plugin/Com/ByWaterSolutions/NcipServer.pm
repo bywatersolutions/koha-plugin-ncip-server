@@ -30,7 +30,7 @@ use Koha::Config::SysPrefs;
 use Koha::Database;
 use Koha::Patrons;
 
-our $VERSION = "0.0.0";
+our $VERSION = "0.0.1";
 
 our $metadata = {
     name            => 'NCIP server plugin',
