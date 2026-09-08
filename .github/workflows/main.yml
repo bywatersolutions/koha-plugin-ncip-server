@@ -15,8 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 24.05 is pinned because it is the plugin's declared minimum_version
-        koha-version: [main, stable, oldstable, '24.05']
+        koha-version: [main, stable, oldstable]
 
     steps:
 

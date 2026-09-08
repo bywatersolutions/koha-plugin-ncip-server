@@ -8,6 +8,9 @@ which is being archived. There is no separate service to deploy, proxy, or
 upgrade alongside Koha anymore. Install the plugin, configure it, and point
 your NCIP partners at the endpoint.
 
+The plugin requires Koha 25.11 or later. Libraries on older Koha versions
+should keep using the standalone server until they upgrade.
+
 The plugin implements the same NCIP services as the standalone server:
 LookupUser, LookupItem, LookupVersion, CheckOutItem, CheckInItem, RenewItem,
 RequestItem, CancelRequestItem, AcceptItem, and DeleteItem, for NCIP v2 (with

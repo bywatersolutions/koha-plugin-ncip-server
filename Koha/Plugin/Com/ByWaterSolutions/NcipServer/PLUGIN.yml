@@ -2,7 +2,7 @@ name: NCIP server plugin
 author: ByWater Solutions
 date_authored: 2025-04-25
 date_updated: 1900-01-01
-minimum_version: 24.05
+minimum_version: 25.11
 maximum_version:
 version: {VERSION}
 description: This plugin implements an NCIP server on top of Koha's REST API. It replaces the standalone ncip-server application.
