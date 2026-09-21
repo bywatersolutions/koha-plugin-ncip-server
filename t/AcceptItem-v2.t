@@ -5,7 +5,7 @@ use Modern::Perl;
 use FindBin qw($Bin);
 use lib ( "$Bin/lib", "$Bin/..", '/kohadevbox/koha' );
 
-use Test::More tests => 15;
+use Test::More tests => 16;
 use Test::Mojo;
 
 use NCIPTest;
@@ -876,6 +876,29 @@ subtest 'Test AcceptItem with MediumType' => sub {
     # Reset itemtype_map
     $koha_config{itemtype_map} = undef;
     NCIPTest::set_config( $plugin, { koha => \%koha_config } );
+};
+
+subtest 'Test AcceptItem with no author' => sub {
+    plan tests => 3;
+
+    my $ncip_message = NCIPTest::render_fixture(
+        'v2/AcceptItem.xml',
+        {
+            patron_cardnumber => $patron_1->cardnumber,
+            pickup_location   => $library_2->id,
+            item_barcode      => 'NCIPNOAUTHOR1',
+            no_author         => 1,
+        }
+    );
+
+    $dom = NCIPTest::post_ncip( $t, $ncip_message );
+
+    my $item = Koha::Items->find( { barcode => 'NCIPNOAUTHOR1' } );
+    is( ref($item), 'Koha::Item', 'Found item with corrosponding item barcode' );
+
+    my $biblio = $item->biblio;
+    is( $biblio->metadata->record->field('100'), undef, 'No 100 field was added for a message without an author' );
+    is( $biblio->author, undef, 'The record created has no author' );
 };
 
 $schema->storage->txn_rollback;
