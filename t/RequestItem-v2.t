@@ -5,7 +5,7 @@ use Modern::Perl;
 use FindBin qw($Bin);
 use lib ( "$Bin/lib", "$Bin/..", '/kohadevbox/koha' );
 
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Test::Mojo;
 
 use NCIPTest;
@@ -295,6 +295,42 @@ subtest 'Test RequestItem by ISBN' => sub {
     is( $hold->biblionumber, $item_2->biblionumber, "Request is for the record with the matching ISBN" );
     is( $hold->itemnumber, undef, "Request is a record level hold" );
     is( $hold->borrowernumber, $patron_2->id, "Request is for the correct patron" );
+};
+
+subtest 'Test RequestItem with only an item identifier' => sub {
+    plan tests => 4;
+
+    my $patron_3 = $builder->build_object(
+        {
+            class => 'Koha::Patrons',
+            value => {
+                branchcode   => $library->id,
+                categorycode => $patron_category->{categorycode},
+                dateexpiry   => '2032-12-31',
+            }
+        }
+    );
+
+    my $item_3 = $builder->build_sample_item( { library => $library->id } );
+
+    my $ncip_message = NCIPTest::render_fixture(
+        'v2/RequestItem.xml',
+        {
+            user_identifier   => $patron_3->cardnumber,
+            item_identifier   => $item_3->barcode,
+            pickup_branchcode => $item_3->holdingbranch,
+        }
+    );
+
+    $dom = NCIPTest::post_ncip( $t, $ncip_message );
+
+    my $hold_id = $dom->{NCIPMessage}->{RequestItemResponse}->{RequestId}->{RequestIdentifierValue}->{text};
+    ok( $hold_id, "RequestItemResponse returned a request id" );
+
+    my $hold = Koha::Holds->find( $hold_id );
+    is( $hold->biblionumber,    $item_3->biblionumber, "Request is for the record the item is on" );
+    is( $hold->itemnumber,      $item_3->itemnumber,   "Request is for the item that was sent" );
+    is( $hold->borrowernumber,  $patron_3->id,         "Request is for the correct patron" );
 };
 
 $schema->storage->txn_rollback;
