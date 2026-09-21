@@ -1,47 +1,23 @@
 [% USE raw %]
 [% USE Asset %]
+[% USE Koha %]
 
-[% INCLUDE 'doc-head-open.inc' %]
- <title>Koha &rsaquo; Plugins &rsaquo; NCIP server &rsaquo; Configuration</title>
-[% INCLUDE 'doc-head-close.inc' %]
-  <style>
-    .CodeMirror {
-      border: 2px solid #eee;
-      height: auto;
-    }
-  </style>
-[% Asset.js( "lib/codemirror/codemirror.min.js" ) | $raw %]
-[% Asset.css("lib/codemirror/codemirror.min.css") | $raw %]
-[% Asset.css("lib/codemirror/lint.min.css") | $raw %]
-</head>
+[% WRAPPER 'wrapper-staff-tool-plugin.inc' plugin_title = "NCIP server" method = 'configure' %]
 
-<body>
-[% WRAPPER 'header.inc' %]
-    [% INCLUDE 'cat-search.inc' %]
-[% END %]
+    [% Asset.css("lib/codemirror/codemirror.min.css") | $raw %]
+    [% Asset.css("lib/codemirror/lint.min.css") | $raw %]
+    <style>
+      .CodeMirror {
+        border: 2px solid #eee;
+        height: auto;
+      }
+    </style>
 
-[% WRAPPER 'sub-header.inc' %]
-    [% WRAPPER breadcrumbs %]
-        [% WRAPPER breadcrumb_item %]
-            <a href="/cgi-bin/koha/plugins/plugins-home.pl">Plugins</a>
-        [% END %]
-        [% WRAPPER breadcrumb_item %]
-            <a href="/cgi-bin/koha/plugins/run.pl?class=[% CLASS | uri %]&method=configure">NCIP Server</a>
-        [% END %]
-        [% WRAPPER breadcrumb_item %]
-            Configuration
-        [% END %]
-    [% END #/ WRAPPER breadcrumbs %]
-[% END #/ WRAPPER sub-header.inc %]
-
-<div class="main container-fluid">
-    <div class="row">
-        <div class="col-md-10 order-md-2 order-sm-1">
-            <h1>NCIP server configuration</h1>
+    <h1>NCIP server configuration</h1>
 
     [% IF errors %]
         [% FOREACH error IN errors %]
-            <div class="dialog error">
+            <div class="alert alert-warning">
                 [% SWITCH error.code %]
                 [% CASE 'CONFIGURATION_NOT_SAVED' %]<span>The configuration was not saved, it is not valid YAML. The previously saved configuration is still in effect.</span>
                 [% CASE 'CONFIGURATION_INVALID' %]<span>The configuration is not valid YAML and could not be loaded</span>
@@ -54,47 +30,43 @@
             </div>
         [% END %]
     [% END %]
+
     <h2>Configuration</h2>
     <br/>
-      <form method="post">
-        [% INCLUDE 'csrf-token.inc' %]
-        <input type="hidden" name="class"  value="[% CLASS | html %]"/>
-        <input type="hidden" name="method" value="configure"/>
-        <input type="hidden" name="op"     value="cud-save"/>
-        <div class="input-group">
-          <span class="input-group-addon" id="configuration_label">Configuration</span>
-          <textarea rows="20"
-                    class="form-control"
-                    aria-describedby="configuration_label"
-                    name="configuration"
-                    id="configuration">[%- configuration | $raw -%]</textarea>
-        </div>
-        <br/>
-        <button type="submit" class="btn btn-default">Save configuration</button>
-      </form>
-  </div>
-  <div class="yui-b">
-    <div id="navmenu">&nbsp;</div>
-  </div>
+    <form method="post">
+      [% INCLUDE 'csrf-token.inc' %]
+      <input type="hidden" name="class"  value="[% CLASS | html %]"/>
+      <input type="hidden" name="method" value="configure"/>
+      <input type="hidden" name="op"     value="cud-save"/>
+      <div class="input-group">
+        <span class="input-group-addon" id="configuration_label">Configuration</span>
+        <textarea rows="20"
+                  class="form-control"
+                  aria-describedby="configuration_label"
+                  name="configuration"
+                  id="configuration">[%- configuration | $raw -%]</textarea>
+      </div>
+      <br/>
+      <button type="submit" class="btn btn-default">Save configuration</button>
+    </form>
 
-
+    [% Asset.js( "lib/codemirror/codemirror.min.js" ) | $raw %]
     [% Asset.js( "lib/codemirror/yaml.min.js" ) | $raw %]
     [% Asset.js( "lib/codemirror/lint.min.js" ) | $raw %]
     [% Asset.js( "lib/linters/js-yaml.min.js" ) | $raw %]
     [% Asset.js( "lib/codemirror/yaml-lint.min.js" ) | $raw %]
 
-    <script>
-        $( document ).ready( function () {
-            var editor = CodeMirror.fromTextArea( document.getElementById( "configuration" ), {
-                lineNumbers: true,
-                mode: 'text/x-yaml',
-                lineWrapping: false,
-                gutters: ["CodeMirror-lint-markers"],
-                lint: true
-            });
-            editor.setSize(1000, 300);
+    <script nonce="[% Koha.CSPNonce | $raw %]">
+        // The editor is set up inline rather than on document ready, the page
+        // scripts including jQuery are loaded after this content by the wrapper
+        var editor = CodeMirror.fromTextArea( document.getElementById( "configuration" ), {
+            lineNumbers: true,
+            mode: 'text/x-yaml',
+            lineWrapping: false,
+            gutters: ["CodeMirror-lint-markers"],
+            lint: true
         });
+        editor.setSize(1000, 300);
     </script>
 
-[% INCLUDE 'intranet-bottom.inc' %]
-
+[% END %]
