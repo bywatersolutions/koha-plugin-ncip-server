@@ -5,7 +5,7 @@ use Modern::Perl;
 use FindBin qw($Bin);
 use lib ( "$Bin/lib", "$Bin/..", '/kohadevbox/koha' );
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::NoWarnings;
 use Test::Warn;
 use Test::Mojo;
@@ -24,7 +24,7 @@ NCIPTest::set_config( $plugin, { koha => {} } );
 my $t = Test::Mojo->new('Koha::REST::V1');
 
 subtest 'token not required' => sub {
-    plan tests => 4;
+    plan tests => 5;
 
     my $tx = $t->ua->post('/api/v1/contrib/ncip_server/ncip');
     is( $tx->res->code, 200, 'POST without a token gets a 200' );
@@ -33,6 +33,24 @@ subtest 'token not required' => sub {
     $tx = $t->ua->get('/api/v1/contrib/ncip_server/ncip');
     is( $tx->res->code, 200, 'GET without a token gets a 200' );
     like( $tx->res->body, qr/It works!/, 'GET without a token gets the NCIP envelope' );
+
+    $tx = $t->ua->post('/api/v1/contrib/ncip_server/ncip/anytoken');
+    is( $tx->res->code, 403, 'POST with a token gets a 403 when no token is configured' );
+};
+
+subtest 'token configured but not required' => sub {
+    plan tests => 3;
+
+    NCIPTest::set_config( $plugin, { auth_token => 'sekrit', koha => {} } );
+
+    my $tx = $t->ua->post('/api/v1/contrib/ncip_server/ncip');
+    is( $tx->res->code, 200, 'POST without a token gets a 200' );
+
+    $tx = $t->ua->post('/api/v1/contrib/ncip_server/ncip/wrongtoken');
+    is( $tx->res->code, 403, 'POST with the wrong token gets a 403' );
+
+    $tx = $t->ua->post('/api/v1/contrib/ncip_server/ncip/sekrit');
+    is( $tx->res->code, 200, 'POST with the correct token gets a 200' );
 };
 
 subtest 'token required' => sub {

@@ -53,14 +53,18 @@ sub ncip {
             json   => { error => 'NCIP server plugin configuration is invalid' }
         ) unless defined $config;
 
-        if ( $plugin->requires_token ) {
-            my $token = $c->param('authorization_token');
+        my $token = $c->param('authorization_token');
 
-            return $c->render(
-                status => 403,
-                json   => { error => 'Invalid or missing authorization token' }
-            ) unless defined $token && $plugin->is_token_valid($token);
-        }
+        my $token_missing = $plugin->requires_token && !defined $token;
+
+        # A token that doesn't match is rejected even when a token isn't
+        # required, matching the standalone server
+        my $token_invalid = defined $token && !$plugin->is_token_valid($token);
+
+        return $c->render(
+            status => 403,
+            json   => { error => 'Invalid or missing authorization token' }
+        ) if $token_missing || $token_invalid;
 
         # Same precedence as the standalone server: form or query param
         # 'xml', then 'XForms:Model', then the raw request body

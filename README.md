@@ -155,6 +155,9 @@ to the schema too, or it will be flagged as unknown.
 | `token_required` | If true, requests must include the token in the URL (`.../ncip/{auth_token}`). Requests without a matching token get a 403. |
 | `auth_token` | The token to require. |
 
+A token sent in the URL is always checked, so a request carrying the wrong
+token gets a 403 even when `token_required` is false.
+
 If you are migrating from the standalone server, the `NcipRequireToken` and
 `NcipToken` system preferences it used are migrated into these keys
 automatically when the plugin is installed, and the preferences are deleted.
