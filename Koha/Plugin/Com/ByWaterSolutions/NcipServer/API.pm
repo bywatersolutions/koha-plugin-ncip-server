@@ -53,6 +53,15 @@ sub ncip {
             json   => { error => 'NCIP server plugin configuration is invalid' }
         ) unless defined $config;
 
+        my $remote_address = $c->tx->remote_address;
+        unless ( $plugin->is_ip_allowed($remote_address) ) {
+            $logger->warn("NCIP: request from $remote_address refused, it is not in 'allowed_ips'");
+            return $c->render(
+                status => 403,
+                json   => { error => 'IP address not allowed' }
+            );
+        }
+
         my $token = $c->param('authorization_token');
 
         my $token_missing = $plugin->requires_token && !defined $token;

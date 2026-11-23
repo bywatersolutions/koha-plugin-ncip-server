@@ -5,7 +5,7 @@ use Modern::Perl;
 use FindBin qw($Bin);
 use lib ( "$Bin/lib", "$Bin/..", '/kohadevbox/koha' );
 
-use Test::More tests => 9;
+use Test::More tests => 10;
 use Test::NoWarnings;
 use Test::Warn;
 use Test::Mojo;
@@ -95,6 +95,38 @@ subtest 'token URL ending in /ncip' => sub {
 
     $tx = $t->ua->post('/api/v1/contrib/ncip_server/ncip/wrongtoken/ncip');
     is( $tx->res->code, 403, 'POST with the wrong token and a trailing /ncip gets a 403' );
+};
+
+subtest 'IP allowlist' => sub {
+    plan tests => 5;
+
+    # Test::Mojo's requests come from 127.0.0.1
+    NCIPTest::set_config( $plugin, { allowed_ips => [ '216.147.212.121', '127.0.0.0/8' ], koha => {} } );
+    my $tx = $t->ua->post('/api/v1/contrib/ncip_server/ncip');
+    is( $tx->res->code, 200, 'POST from an allowed address gets a 200' );
+
+    NCIPTest::set_config( $plugin, { allowed_ips => ['216.147.212.121'], koha => {} } );
+    $tx = $t->ua->post('/api/v1/contrib/ncip_server/ncip');
+    is( $tx->res->code, 403, 'POST from an address that is not allowed gets a 403' );
+    is(
+        $tx->res->json->{error}, 'IP address not allowed',
+        'POST from an address that is not allowed gets the IP error'
+    );
+
+    # Both checks apply when both are configured
+    NCIPTest::set_config(
+        $plugin,
+        { allowed_ips => ['216.147.212.121'], token_required => 1, auth_token => 'sekrit', koha => {} }
+    );
+    $tx = $t->ua->post('/api/v1/contrib/ncip_server/ncip/sekrit');
+    is( $tx->res->code, 403, 'POST with the correct token from an address that is not allowed gets a 403' );
+
+    NCIPTest::set_config(
+        $plugin,
+        { allowed_ips => ['127.0.0.1'], token_required => 1, auth_token => 'sekrit', koha => {} }
+    );
+    $tx = $t->ua->post('/api/v1/contrib/ncip_server/ncip');
+    is( $tx->res->code, 403, 'POST without a token from an allowed address gets a 403 when a token is required' );
 };
 
 subtest 'invalid configuration' => sub {

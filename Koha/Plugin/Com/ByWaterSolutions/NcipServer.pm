@@ -22,6 +22,7 @@ use base qw(Koha::Plugins::Base);
 use Encode;
 use JSON::Validator;
 use Mojo::JSON qw(decode_json);
+use Net::Netmask;
 use Try::Tiny;
 use YAML::XS;
 
@@ -228,6 +229,9 @@ sub check_configuration {
     push @errors, { code => 'AUTH_TOKEN_MISSING' }
         if $config->{token_required} && !$config->{auth_token};
 
+    push @errors, map { { code => 'ALLOWED_IP_INVALID', ip => $_ } }
+        grep { !Net::Netmask->new2( $_ // q{} ) } $self->_allowed_ips;
+
     my $borrowernumber = $config->{koha}->{userenv_borrowernumber};
     if ( !$borrowernumber ) {
         push @errors, { code => 'USERENV_NOT_SET' };
@@ -297,6 +301,48 @@ sub is_token_valid {
     my $configured_token = $config->{auth_token} // '';
 
     return $configured_token eq $token;
+}
+
+=head3 is_ip_allowed
+
+    if ( $plugin->is_ip_allowed($ip_address) ) { ... }
+
+Checks the address against 'allowed_ips', any address is allowed when it is not set.
+
+=cut
+
+sub is_ip_allowed {
+    my ( $self, $ip_address ) = @_;
+
+    my @allowed_ips = $self->_allowed_ips;
+    return 1 unless @allowed_ips;
+
+    # An entry that isn't a valid address or range matches nothing, so a typo locks out instead of opening up
+    for my $entry (@allowed_ips) {
+        my $netmask = Net::Netmask->new2( $entry // q{} );
+        return 1 if $netmask && $netmask->match($ip_address);
+    }
+
+    return 0;
+}
+
+=head3 _allowed_ips
+
+    my @allowed_ips = $self->_allowed_ips;
+
+Returns the 'allowed_ips' entries, a single address given as a string counts as a list of one.
+
+=cut
+
+sub _allowed_ips {
+    my ($self) = @_;
+
+    my $config = $self->configuration // {};
+
+    my $allowed_ips = $config->{allowed_ips};
+    return @$allowed_ips  if ref $allowed_ips eq 'ARRAY';
+    return ($allowed_ips) if defined $allowed_ips && length $allowed_ips;
+    return;
 }
 
 1;

@@ -13,6 +13,10 @@
   "properties": {
     "token_required": { "$ref": "#/definitions/flag" },
     "auth_token": { "$ref": "#/definitions/optional_string" },
+    "allowed_ips": {
+      "type": ["array", "string", "null"],
+      "items": { "type": "string" }
+    },
     "koha": {
       "type": "object",
       "additionalProperties": false,

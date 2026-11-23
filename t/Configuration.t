@@ -5,7 +5,7 @@ use Modern::Perl;
 use FindBin qw($Bin);
 use lib ( "$Bin/lib", "$Bin/..", '/kohadevbox/koha' );
 
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::NoWarnings;
 use Test::Warn;
 
@@ -46,7 +46,7 @@ subtest 'configuration() tests' => sub {
 };
 
 subtest 'check_configuration() tests' => sub {
-    plan tests => 6;
+    plan tests => 8;
 
     my $patron = $builder->build_object( { class => 'Koha::Patrons' } );
 
@@ -64,6 +64,28 @@ subtest 'check_configuration() tests' => sub {
         $plugin->check_configuration,
         [ { code => 'AUTH_TOKEN_MISSING' } ],
         'AUTH_TOKEN_MISSING when token_required is set without an auth_token'
+    );
+
+    NCIPTest::set_config(
+        $plugin,
+        {
+            allowed_ips => [ '216.147.212.121', '10.20.0.0/16', '2001:db8::/32' ],
+            koha        => { userenv_borrowernumber => $patron->borrowernumber },
+        }
+    );
+    is_deeply( $plugin->check_configuration, [], 'no errors for valid allowed_ips entries' );
+
+    NCIPTest::set_config(
+        $plugin,
+        {
+            allowed_ips => [ '216.147.212.121', '10.1.2.3/33', 'banana' ],
+            koha        => { userenv_borrowernumber => $patron->borrowernumber },
+        }
+    );
+    is_deeply(
+        $plugin->check_configuration,
+        [ { code => 'ALLOWED_IP_INVALID', ip => '10.1.2.3/33' }, { code => 'ALLOWED_IP_INVALID', ip => 'banana' } ],
+        'ALLOWED_IP_INVALID for each allowed_ips entry that is not an address or range'
     );
 
     NCIPTest::set_config( $plugin, { koha => {} } );
@@ -133,6 +155,39 @@ subtest 'check_configuration() schema validation tests' => sub {
     );
     @schema_errors = grep { $_->{code} eq 'CONFIG_SCHEMA' } @{ $plugin->check_configuration };
     is( scalar @schema_errors, 1, 'An unknown top level key gives one schema error' );
+};
+
+subtest 'is_ip_allowed() tests' => sub {
+    plan tests => 11;
+
+    NCIPTest::set_config( $plugin, { koha => {} } );
+    $plugin->configuration( { force => 1 } );
+    is( $plugin->is_ip_allowed('203.0.113.5'), 1, 'any address is allowed when allowed_ips is not set' );
+
+    NCIPTest::set_config( $plugin, { allowed_ips => [], koha => {} } );
+    $plugin->configuration( { force => 1 } );
+    is( $plugin->is_ip_allowed('203.0.113.5'), 1, 'any address is allowed when allowed_ips is empty' );
+
+    NCIPTest::set_config(
+        $plugin,
+        { allowed_ips => [ '216.147.212.121', '10.20.0.0/16', '2001:db8::/32' ], koha => {} }
+    );
+    $plugin->configuration( { force => 1 } );
+    is( $plugin->is_ip_allowed('216.147.212.121'), 1, 'a listed address is allowed' );
+    is( $plugin->is_ip_allowed('216.147.212.122'), 0, 'the address next to a listed one is refused' );
+    is( $plugin->is_ip_allowed('10.20.5.5'),       1, 'an address inside a listed range is allowed' );
+    is( $plugin->is_ip_allowed('10.21.0.1'),       0, 'an address outside a listed range is refused' );
+    is( $plugin->is_ip_allowed('2001:db8::5'),     1, 'an IPv6 address inside a listed range is allowed' );
+    is( $plugin->is_ip_allowed('2001:db9::5'),     0, 'an IPv6 address outside a listed range is refused' );
+
+    NCIPTest::set_config( $plugin, { allowed_ips => '216.147.212.121', koha => {} } );
+    $plugin->configuration( { force => 1 } );
+    is( $plugin->is_ip_allowed('216.147.212.121'), 1, 'a single address given as a string is allowed' );
+    is( $plugin->is_ip_allowed('203.0.113.5'),     0, 'other addresses are refused when allowed_ips is a string' );
+
+    NCIPTest::set_config( $plugin, { allowed_ips => ['banana'], koha => {} } );
+    $plugin->configuration( { force => 1 } );
+    is( $plugin->is_ip_allowed('203.0.113.5'), 0, 'an entry that is not an address or range allows nothing' );
 };
 
 $schema->storage->txn_rollback;

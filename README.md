@@ -134,6 +134,9 @@ in its `config.yml`, so an existing configuration can be pasted in verbatim.
 ---
 auth_token: XXX
 token_required: true
+allowed_ips:
+  - 216.147.212.121
+  - 10.20.0.0/16
 koha:
   userenv_borrowernumber: 42
   framework: 'FA'
@@ -155,6 +158,16 @@ to the schema too, or it will be flagged as unknown.
 | --- | --- |
 | `token_required` | If true, requests must include the token in the URL (`.../ncip/{auth_token}`). Requests without a matching token get a 403. |
 | `auth_token` | The token to require. |
+| `allowed_ips` | Optional list of IP addresses and ranges (`10.20.0.0/16`, IPv6 works too) allowed to send NCIP requests. Requests from any other address get a 403. When it is not set, requests are accepted from any address. |
+
+When both a token and `allowed_ips` are set, a request must pass both checks.
+An `allowed_ips` entry that isn't a valid address or range matches nothing,
+and is reported on the configuration page.
+
+The address checked is the one Koha sees for the request. If Koha sits behind
+a reverse proxy or Cloudflare, set `koha_trusted_proxies` in
+`koha-conf.xml` so Koha sees the client's real address, otherwise every
+request appears to come from the proxy.
 
 A token sent in the URL is always checked, so a request carrying the wrong
 token gets a 403 even when `token_required` is false.
