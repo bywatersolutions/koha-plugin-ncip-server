@@ -58,16 +58,18 @@
     [% Asset.js( "lib/codemirror/yaml-lint.min.js" ) | $raw %]
 
     <script nonce="[% Koha.CSPNonce | $raw %]">
-        // The editor is set up inline rather than on document ready, the page
-        // scripts including jQuery are loaded after this content by the wrapper
-        var editor = CodeMirror.fromTextArea( document.getElementById( "configuration" ), {
-            lineNumbers: true,
-            mode: 'text/x-yaml',
-            lineWrapping: false,
-            gutters: ["CodeMirror-lint-markers"],
-            lint: true
+        // Plain JS instead of jQuery's document ready, the wrapper loads jQuery after this content.
+        // Wait for the page to finish loading, an editor created mid-page measures too early and stays blank until clicked.
+        window.addEventListener( "load", function () {
+            var editor = CodeMirror.fromTextArea( document.getElementById( "configuration" ), {
+                lineNumbers: true,
+                mode: 'text/x-yaml',
+                lineWrapping: false,
+                gutters: ["CodeMirror-lint-markers"],
+                lint: true
+            });
+            editor.setSize(1000, 300);
         });
-        editor.setSize(1000, 300);
     </script>
 
 [% END %]
