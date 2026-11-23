@@ -1,6 +1,6 @@
 {
     "name": "koha-plugin-ncip-server",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "description": "NCIP server plugin",
     "devDependencies": {
         "gulp": "^4.0.2",
