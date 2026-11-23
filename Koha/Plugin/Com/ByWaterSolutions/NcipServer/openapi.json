@@ -208,5 +208,119 @@
         }
       }
     }
+  },
+  "/ncip/{authorization_token}/ncip": {
+    "get": {
+      "x-mojo-to": "Com::ByWaterSolutions::NcipServer::API#ncip",
+      "operationId": "ncipServerCheckWithTokenAndSuffix",
+      "tags": ["ncip"],
+      "parameters": [
+        {
+          "name": "authorization_token",
+          "in": "path",
+          "description": "Authorization token configured in the plugin ( auth_token )",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "produces": ["application/xml"],
+      "responses": {
+        "200": {
+          "description": "NCIP connectivity check response"
+        },
+        "400": {
+          "description": "Bad request",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "description": "An explanation for the error",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "403": {
+          "description": "Access denied",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "description": "An explanation for the error",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal error",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "description": "An explanation for the error",
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "post": {
+      "x-mojo-to": "Com::ByWaterSolutions::NcipServer::API#ncip",
+      "operationId": "ncipServerProcessWithTokenAndSuffix",
+      "tags": ["ncip"],
+      "parameters": [
+        {
+          "name": "authorization_token",
+          "in": "path",
+          "description": "Authorization token configured in the plugin ( auth_token )",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "produces": ["application/xml"],
+      "responses": {
+        "200": {
+          "description": "NCIP response message"
+        },
+        "400": {
+          "description": "Bad request",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "description": "An explanation for the error",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "403": {
+          "description": "Access denied",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "description": "An explanation for the error",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal error",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "description": "An explanation for the error",
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

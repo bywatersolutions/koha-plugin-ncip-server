@@ -50,6 +50,7 @@ from the XML body:
 ```
 POST /api/v1/contrib/ncip_server/ncip
 POST /api/v1/contrib/ncip_server/ncip/{auth_token}
+POST /api/v1/contrib/ncip_server/ncip/{auth_token}/ncip
 ```
 
 The NCIP XML can be sent as the raw request body, or as a form field named
@@ -157,6 +158,10 @@ to the schema too, or it will be flagged as unknown.
 
 A token sent in the URL is always checked, so a request carrying the wrong
 token gets a 403 even when `token_required` is false.
+
+The token URL may also end in `/ncip` (`.../ncip/{auth_token}/ncip`), for ILL
+systems such as Rapido that add `/ncip` to the end of the base URL they are
+given. Give those systems `.../ncip/{auth_token}` as the base URL.
 
 If you are migrating from the standalone server, the `NcipRequireToken` and
 `NcipToken` system preferences it used are migrated into these keys

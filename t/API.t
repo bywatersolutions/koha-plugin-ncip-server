@@ -5,7 +5,7 @@ use Modern::Perl;
 use FindBin qw($Bin);
 use lib ( "$Bin/lib", "$Bin/..", '/kohadevbox/koha' );
 
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Test::NoWarnings;
 use Test::Warn;
 use Test::Mojo;
@@ -78,6 +78,23 @@ subtest 'token required' => sub {
 
     $tx = $t->ua->get('/api/v1/contrib/ncip_server/ncip/sekrit');
     is( $tx->res->code, 200, 'GET with the correct token gets a 200' );
+};
+
+subtest 'token URL ending in /ncip' => sub {
+    plan tests => 4;
+
+    # Some ILL systems ( Rapido ) add "/ncip" to the end of the base URL they are given
+    NCIPTest::set_config( $plugin, { token_required => 1, auth_token => 'sekrit', koha => {} } );
+
+    my $tx = $t->ua->post('/api/v1/contrib/ncip_server/ncip/sekrit/ncip');
+    is( $tx->res->code, 200, 'POST with the correct token and a trailing /ncip gets a 200' );
+    like( $tx->res->body, qr/It works!/, 'POST with the correct token and a trailing /ncip gets the NCIP envelope' );
+
+    $tx = $t->ua->get('/api/v1/contrib/ncip_server/ncip/sekrit/ncip');
+    is( $tx->res->code, 200, 'GET with the correct token and a trailing /ncip gets a 200' );
+
+    $tx = $t->ua->post('/api/v1/contrib/ncip_server/ncip/wrongtoken/ncip');
+    is( $tx->res->code, 403, 'POST with the wrong token and a trailing /ncip gets a 403' );
 };
 
 subtest 'invalid configuration' => sub {
